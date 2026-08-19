@@ -9,6 +9,9 @@ const HISTORY_KEY = "catalog.history";
 const THEME_KEY = "catalog.theme";
 const NOTES_KEY = "catalog.notes";
 const WORKLIST_KEY = "catalog.worklist";
+const LISTS_KEY = "catalog.lists";
+const LIST_NAME_KEY = "catalog.listName";
+const DEFAULT_LIST = "Lista mea";
 const GUIDE_KEY = "catalog.guide";
 const LAST_KEY = "catalog.last";
 const MAX_RESULTS = 60;
@@ -38,6 +41,9 @@ const els = {
   worklistItems: document.getElementById("worklistItems"),
   worklistSend: document.getElementById("worklistSend"),
   worklistClear: document.getElementById("worklistClear"),
+  worklistNew: document.getElementById("worklistNew"),
+  worklistDrop: document.getElementById("worklistDrop"),
+  listNames: document.getElementById("listNames"),
   depths: document.getElementById("depths"),
   depthList: document.getElementById("depthList"),
   sections: document.getElementById("sections"),
@@ -78,6 +84,9 @@ const els = {
   backupSave: document.getElementById("backupSave"),
   backupLoad: document.getElementById("backupLoad"),
   backupFile: document.getElementById("backupFile"),
+  feedback: document.getElementById("feedback"),
+  feedbackBox: document.getElementById("feedbackBox"),
+  feedbackClose: document.getElementById("feedbackClose"),
   tutorials: document.getElementById("tutorials"),
   tutList: document.getElementById("tutList"),
   tutImage: document.getElementById("tutImage"),
@@ -104,15 +113,32 @@ const favourites = new Set(
 let history = JSON.parse(localStorage.getItem(HISTORY_KEY) || "[]");
 const notes = JSON.parse(localStorage.getItem(NOTES_KEY) || "{}");
 let worklist = JSON.parse(localStorage.getItem(WORKLIST_KEY) || "[]");
+// several named lists (one per site or per job), the active one is the worklist
+let lists = JSON.parse(localStorage.getItem(LISTS_KEY) || "{}");
+let listName = localStorage.getItem(LIST_NAME_KEY) || DEFAULT_LIST;
+if (!lists[listName]) lists[listName] = worklist;
 let lastOpened = localStorage.getItem(LAST_KEY) || "";
 let sharedList = [];
+let sharedName = "";
 
 function saveNotes() {
   localStorage.setItem(NOTES_KEY, JSON.stringify(notes));
 }
 
 function saveWorklist() {
+  lists[listName] = worklist;
   localStorage.setItem(WORKLIST_KEY, JSON.stringify(worklist));
+  localStorage.setItem(LISTS_KEY, JSON.stringify(lists));
+  localStorage.setItem(LIST_NAME_KEY, listName);
+}
+
+function useList(name) {
+  listName = name;
+  worklist = lists[name] || [];
+  saveWorklist();
+  renderWorklist();
+  updateListButton();
+  render(els.query.value);
 }
 
 function saveFavourites() {
@@ -357,7 +383,9 @@ function renderSections() {
 function renderShared() {
   const found = sharedList.map(hitByCode).filter(Boolean);
   els.shared.hidden = false;
-  els.sharedTitle.textContent = `List\u0103 primit\u0103 (${found.length})`;
+  els.sharedTitle.textContent = sharedName
+    ? `${sharedName} · primit\u0103 (${found.length})`
+    : `List\u0103 primit\u0103 (${found.length})`;
   els.recent.hidden = true;
   els.favourites.hidden = true;
   els.history.hidden = true;
@@ -507,8 +535,20 @@ function hitByCode(code) {
 
 // a short pick list the user builds while walking the shop, sent in one message
 function renderWorklist() {
-  els.worklist.hidden = worklist.length === 0;
-  els.worklistTitle.textContent = `List\u0103 de lucru (${worklist.length})`;
+  const names = Object.keys(lists);
+  els.worklist.hidden = worklist.length === 0 && names.length < 2;
+  els.worklistTitle.textContent = `${listName} (${worklist.length})`;
+  els.worklistDrop.hidden = names.length < 2;
+  els.listNames.replaceChildren();
+  if (names.length > 1) {
+    for (const name of names) {
+      els.listNames.append(
+        chip(`${name} (${lists[name].length})`, name === listName, () =>
+          useList(name),
+        ),
+      );
+    }
+  }
   els.worklistItems.replaceChildren();
   for (const code of worklist) {
     const hit = hitByCode(code);
@@ -527,7 +567,7 @@ function worklistText() {
     const page = hit ? ` · pagina ${hit.page}` : "";
     return `${code}${name ? ` · ${name}` : ""}${page}`;
   });
-  return `Listă articole catalog:\n${lines.join("\n")}\n${link}`;
+  return `${listName}:\n${lines.join("\n")}\n${link}&nume=${encodeURIComponent(listName)}`;
 }
 
 async function sendWorklist() {
@@ -932,10 +972,37 @@ els.addList.addEventListener("click", () => {
 els.worklistSend.addEventListener("click", sendWorklist);
 els.sharedSave.addEventListener("click", () => {
   const known = sharedList.filter(hitByCode);
-  worklist = [...new Set([...worklist, ...known])];
+  // a received list keeps its name, so it does not mix with the current job
+  if (sharedName && sharedName !== listName) {
+    lists[sharedName] = [...new Set([...(lists[sharedName] || []), ...known])];
+    listName = sharedName;
+    worklist = lists[sharedName];
+  } else {
+    worklist = [...new Set([...worklist, ...known])];
+  }
   saveWorklist();
   closeShared();
 });
+els.worklistNew.addEventListener("click", () => {
+  const name = (
+    prompt("Numele listei noi (ex. șantier Ploiești):") || ""
+  ).trim();
+  if (!name) return;
+  if (!lists[name]) lists[name] = [];
+  useList(name);
+});
+els.worklistDrop.addEventListener("click", () => {
+  const names = Object.keys(lists);
+  if (names.length < 2) return;
+  if (!confirm(`Ștergi lista „${listName}”?`)) return;
+  delete lists[listName];
+  useList(Object.keys(lists)[0]);
+});
+els.feedback.addEventListener("click", () => {
+  els.guide.close();
+  els.feedbackBox.showModal();
+});
+els.feedbackClose.addEventListener("click", () => els.feedbackBox.close());
 els.sharedClose.addEventListener("click", closeShared);
 els.worklistClear.addEventListener("click", () => {
   worklist = [];
@@ -995,6 +1062,8 @@ function saveBackup() {
     date: new Date().toISOString(),
     notes,
     worklist,
+    lists,
+    listName,
     favourites: [...favourites],
     history,
   };
@@ -1019,6 +1088,13 @@ async function loadBackup(file) {
       worklist = [...new Set([...worklist, ...data.worklist])];
       saveWorklist();
     }
+    if (data.lists && typeof data.lists === "object") {
+      for (const [name, codes] of Object.entries(data.lists)) {
+        if (!Array.isArray(codes)) continue;
+        lists[name] = [...new Set([...(lists[name] || []), ...codes])];
+      }
+      saveWorklist();
+    }
     if (Array.isArray(data.favourites)) {
       data.favourites.forEach((key) => favourites.add(key));
       saveFavourites();
@@ -1041,6 +1117,7 @@ async function loadBackup(file) {
 
 function closeShared() {
   sharedList = [];
+  sharedName = "";
   window.history.replaceState(null, "", location.pathname);
   render("");
 }
@@ -1065,6 +1142,9 @@ async function boot() {
     sections = index.sections || [];
     const hash = decodeURIComponent(location.hash.replace("#", "")).trim();
     sharedList = listFromLink(hash);
+    sharedName = (
+      new URLSearchParams(location.search).get("nume") || ""
+    ).trim();
     const shared = sharedList.length ? "" : hash;
     els.query.value = shared;
     render(shared);

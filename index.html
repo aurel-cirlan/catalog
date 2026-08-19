@@ -71,8 +71,13 @@
         <h2>
           <span id="worklistTitle">Listă de lucru</span>
           <button id="worklistSend" type="button" class="link">trimite</button>
+          <button id="worklistNew" type="button" class="link">
+            listă nouă
+          </button>
+          <button id="worklistDrop" type="button" class="link">șterge</button>
           <button id="worklistClear" type="button" class="link">golește</button>
         </h2>
+        <div id="listNames" class="chipRow sub"></div>
         <div id="worklistItems" class="chipRow"></div>
       </section>
       <section id="depths" class="chips" hidden>
@@ -159,6 +164,9 @@
           Când trimiți lista, cine primește linkul vede articolele cu desene.
         </li>
         <li>
+          Poți avea mai multe liste cu nume („listă nouă"), ex. pe șantiere.
+        </li>
+        <li>
           În pagina articolului: notă proprie, listă de lucru, comparare, print.
         </li>
       </ul>
@@ -172,7 +180,36 @@
         ⬆ Încarcă lista și notele
       </button>
       <input id="backupFile" type="file" accept="application/json" hidden />
+      <button id="feedback" type="button" class="ghost">
+        ✉ Trimite părerea ta
+      </button>
       <button id="guideClose" type="button" class="primary">Am înțeles</button>
+    </dialog>
+
+    <dialog id="feedbackBox" class="guide">
+      <h3>Trimite părerea ta</h3>
+      <p>Scrie-i lui Aurel ce lipsește sau ce nu merge:</p>
+      <a
+        class="ghost"
+        id="feedbackWhatsapp"
+        href="https://wa.me/40732292535?text=Feedback%20catalog%20GEALAN%3A%20"
+        target="_blank"
+        rel="noopener"
+        >💬 WhatsApp 0732 292 535</a
+      >
+      <a
+        class="ghost"
+        href="mailto:aurel.cirlan@outlook.com?subject=Feedback%20catalog%20GEALAN"
+        >✉ aurel.cirlan@outlook.com</a
+      >
+      <a
+        class="ghost"
+        href="https://aurelcirlan.ro"
+        target="_blank"
+        rel="noopener"
+        >🌐 aurelcirlan.ro</a
+      >
+      <button id="feedbackClose" type="button" class="primary">Înapoi</button>
     </dialog>
 
     <dialog id="tutorials" class="viewer">
