@@ -4,7 +4,7 @@
  * Toate drepturile rezervate. Copierea, modificarea sau redistribuirea
  * acestui cod fara acordul scris al autorului este interzisa.
  */
-const CACHE = "catalog-v10";
+const CACHE = "catalog-v11";
 const SHELL = [
   "./",
   "./index.html",
