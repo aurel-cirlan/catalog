@@ -1,4 +1,4 @@
-const CACHE = "catalog-v1";
+const CACHE = "catalog-v2";
 const SHELL = [
   "./",
   "./index.html",

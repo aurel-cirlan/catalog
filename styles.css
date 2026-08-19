@@ -225,3 +225,15 @@ body {
   box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.35);
   pointer-events: none;
 }
+
+.credit {
+  padding: 18px 16px calc(18px + env(safe-area-inset-bottom));
+  text-align: center;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.credit a {
+  color: var(--accent);
+  text-decoration: none;
+}
