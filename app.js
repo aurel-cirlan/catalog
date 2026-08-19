@@ -14,6 +14,7 @@ const LIST_NAME_KEY = "catalog.listName";
 const DEFAULT_LIST = "Lista mea";
 const GUIDE_KEY = "catalog.guide";
 const LAST_KEY = "catalog.last";
+const ZOOM_KEY = "catalog.zoom";
 const MAX_RESULTS = 60;
 const MAX_SECTION_RESULTS = 400;
 const MAX_HISTORY = 8;
@@ -97,6 +98,7 @@ const els = {
   zoomIn: document.getElementById("zoomIn"),
   zoomOut: document.getElementById("zoomOut"),
   fit: document.getElementById("fit"),
+  zoomMode: document.getElementById("zoomMode"),
 };
 
 let hits = [];
@@ -120,6 +122,8 @@ let lists = JSON.parse(localStorage.getItem(LISTS_KEY) || "{}");
 let listName = localStorage.getItem(LIST_NAME_KEY) || DEFAULT_LIST;
 if (!lists[listName]) lists[listName] = worklist;
 let lastOpened = localStorage.getItem(LAST_KEY) || "";
+// "page" shows the whole sheet, "article" opens close to the drawing
+let zoomMode = localStorage.getItem(ZOOM_KEY) || "page";
 let sharedList = [];
 let sharedName = "";
 
@@ -749,17 +753,33 @@ function open(hit) {
   if (!els.viewer.open) els.viewer.showModal();
   els.pageImage.onload = () => {
     naturalWidth = els.pageImage.naturalWidth;
-    // open zoomed in enough that the drawing is readable on a phone
-    zoom = current.x === undefined ? els.stage.clientWidth / naturalWidth : 1;
-    applyZoom();
-    scrollToMarker();
+    if (zoomMode === "article" && current.x !== undefined) {
+      zoom = 1;
+      applyZoom();
+      scrollToMarker();
+    } else {
+      fitPage();
+      scrollToMarker();
+    }
   };
 }
 
+// the whole sheet on the screen, so nothing has to be zoomed out by hand
 function fitPage() {
-  zoom = els.stage.clientWidth / naturalWidth;
+  const ratio = els.pageImage.naturalHeight / naturalWidth || 1;
+  zoom = Math.min(
+    els.stage.clientWidth / naturalWidth,
+    els.stage.clientHeight / (naturalWidth * ratio),
+  );
   applyZoom();
   els.stage.scrollTo({ left: 0, top: 0 });
+}
+
+function setZoomMode(mode) {
+  zoomMode = mode;
+  localStorage.setItem(ZOOM_KEY, mode);
+  els.zoomMode.textContent =
+    mode === "page" ? "\ud83d\udd0e Articol" : "\u25a1 Pagina";
 }
 
 let recogniser = null;
@@ -943,6 +963,16 @@ els.zoomOut.addEventListener("click", () => {
   scrollToMarker();
 });
 els.fit.addEventListener("click", fitPage);
+els.zoomMode.addEventListener("click", () => {
+  setZoomMode(zoomMode === "page" ? "article" : "page");
+  if (zoomMode === "article") {
+    zoom = 1;
+    applyZoom();
+    scrollToMarker();
+  } else {
+    fitPage();
+  }
+});
 els.share.addEventListener("click", () => shareCurrent(false));
 els.sharePage.addEventListener("click", () => shareCurrent(true));
 els.theme.addEventListener("click", () =>
@@ -1172,6 +1202,7 @@ async function boot() {
 els.watermark.textContent = new Array(400).fill("aurelcirlan.ro").join(" ");
 
 applyTheme(localStorage.getItem(THEME_KEY) || "dark");
+setZoomMode(zoomMode);
 
 // a new release takes over on its own, so the phone never shows a stale version
 if ("serviceWorker" in navigator) {
