@@ -1,22 +1,28 @@
 :root {
-  --bg: #111418;
-  --panel: #1b2027;
+  --bg: #0f1216;
+  --panel: #191f27;
+  --raised: #212936;
   --line: #2b323c;
   --text: #f2f5f8;
-  --muted: #9aa5b1;
+  --muted: #98a4b3;
   --accent: #ffb020;
+  --accent-soft: rgba(255, 176, 32, 0.16);
   --shade: rgba(0, 0, 0, 0.35);
+  --lift: 0 6px 18px rgba(0, 0, 0, 0.35);
   color-scheme: dark;
 }
 
 :root[data-theme="light"] {
-  --bg: #f4f6f8;
+  --bg: #eef1f5;
   --panel: #ffffff;
-  --line: #d3d9e0;
+  --raised: #f7f9fb;
+  --line: #dbe1e8;
   --text: #10151b;
   --muted: #5c6874;
   --accent: #d97706;
+  --accent-soft: rgba(217, 119, 6, 0.12);
   --shade: rgba(255, 255, 255, 0.45);
+  --lift: 0 6px 16px rgba(15, 23, 42, 0.1);
   color-scheme: light;
 }
 
@@ -36,19 +42,26 @@ body {
   position: sticky;
   top: 0;
   z-index: 2;
-  background: var(--bg);
-  padding: 12px 12px 6px;
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter: blur(12px);
+  padding: calc(12px + env(safe-area-inset-top)) 14px 8px;
   border-bottom: 1px solid var(--line);
 }
 
 .search {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 4px;
   background: var(--panel);
   border: 1px solid var(--line);
-  border-radius: 12px;
-  padding: 0 8px 0 12px;
+  border-radius: 16px;
+  padding: 0 6px 0 14px;
+  box-shadow: var(--lift);
+  transition: border-color 0.15s ease;
+}
+
+.search:focus-within {
+  border-color: var(--accent);
 }
 
 .search input {
@@ -65,9 +78,15 @@ body {
   border: 0;
   background: transparent;
   color: var(--muted);
-  font-size: 26px;
+  font-size: 24px;
   line-height: 1;
-  padding: 6px 10px;
+  padding: 10px;
+  border-radius: 12px;
+  transition: background 0.15s ease;
+}
+
+.search button:active {
+  background: var(--accent-soft);
 }
 
 .status {
@@ -95,12 +114,20 @@ body {
 }
 
 .chipRow button {
-  background: var(--panel);
+  background: var(--raised);
   border: 1px solid var(--line);
   color: var(--text);
   border-radius: 999px;
-  padding: 8px 14px;
+  padding: 9px 16px;
   font-size: 15px;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.chipRow button:active {
+  background: var(--accent-soft);
+  border-color: var(--accent);
 }
 
 [hidden] {
@@ -142,23 +169,33 @@ body {
 
 .card {
   display: flex;
-  gap: 12px;
+  gap: 14px;
   align-items: center;
   width: 100%;
   text-align: left;
   background: var(--panel);
   border: 1px solid var(--line);
-  border-radius: 14px;
-  padding: 10px;
+  border-radius: 18px;
+  padding: 12px;
   color: inherit;
+  box-shadow: var(--lift);
+  transition:
+    transform 0.12s ease,
+    border-color 0.15s ease;
+}
+
+.card:active {
+  transform: scale(0.985);
+  border-color: var(--accent);
 }
 
 .card img {
-  width: 108px;
-  height: 84px;
+  width: 116px;
+  height: 88px;
   object-fit: contain;
   background: #fff;
-  border-radius: 8px;
+  border-radius: 12px;
+  padding: 4px;
   flex: none;
 }
 
@@ -177,6 +214,10 @@ body {
 .card .page {
   margin-left: auto;
   color: var(--accent);
+  background: var(--accent-soft);
+  border-radius: 999px;
+  padding: 5px 10px;
+  font-size: 13px;
   font-weight: 600;
   white-space: nowrap;
 }
@@ -225,18 +266,23 @@ body {
 }
 
 .viewerBar button {
-  background: var(--panel);
+  background: var(--raised);
   border: 1px solid var(--line);
   color: var(--text);
-  border-radius: 10px;
-  padding: 10px 16px;
+  border-radius: 12px;
+  padding: 11px 16px;
   font-size: 16px;
+}
+
+.viewerBar button:active {
+  background: var(--accent-soft);
 }
 
 .viewerBar span {
   flex: 1;
   text-align: center;
-  color: var(--muted);
+  color: var(--text);
+  font-weight: 600;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -265,6 +311,20 @@ body {
   border-radius: 6px;
   box-shadow: 0 0 0 9999px var(--shade);
   pointer-events: none;
+  animation: pulse 1.6s ease-in-out 3;
+}
+
+@keyframes pulse {
+  50% {
+    border-color: transparent;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
 }
 
 .credit {
@@ -319,8 +379,8 @@ body {
 
 .scanFrame {
   position: absolute;
-  left: 20%;
-  right: 20%;
+  left: 12%;
+  right: 12%;
   top: 35%;
   height: 30%;
   border: 3px solid var(--accent);
