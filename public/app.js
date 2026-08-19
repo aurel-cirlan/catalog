@@ -515,7 +515,7 @@ function renderWorklist() {
 }
 
 function worklistText() {
-  const link = `${location.origin}${location.pathname}#lista=${worklist.join(",")}`;
+  const link = `${location.origin}${location.pathname}?lista=${worklist.join(",")}`;
   const lines = worklist.map((code) => {
     const hit = hitByCode(code);
     const name = hit ? label(hit) : "";
@@ -1036,8 +1036,19 @@ async function loadBackup(file) {
 
 function closeShared() {
   sharedList = [];
-  window.history.replaceState(null, "", location.pathname + location.search);
+  window.history.replaceState(null, "", location.pathname);
   render("");
+}
+
+// the codes travel either as ?lista=... or #lista=..., depending on the chat app
+function listFromLink(hash) {
+  const raw =
+    new URLSearchParams(location.search).get("lista") ||
+    (hash.startsWith("lista=") ? hash.slice(6) : "");
+  return raw
+    .split(",")
+    .map((code) => code.trim())
+    .filter((code) => /^\d+$/.test(code));
 }
 
 async function boot() {
@@ -1048,16 +1059,11 @@ async function boot() {
     hits = flatten(index);
     sections = index.sections || [];
     const hash = decodeURIComponent(location.hash.replace("#", "")).trim();
-    const shared = hash.startsWith("lista=") ? "" : hash;
-    if (!shared && hash) {
-      sharedList = hash
-        .slice(6)
-        .split(",")
-        .map((code) => code.trim())
-        .filter((code) => /^\d+$/.test(code));
-    }
+    sharedList = listFromLink(hash);
+    const shared = sharedList.length ? "" : hash;
     els.query.value = shared;
     render(shared);
+    if (sharedList.length) return;
     if (!localStorage.getItem(GUIDE_KEY)) els.guide.showModal();
     else if (!shared) els.query.focus();
   } catch (error) {

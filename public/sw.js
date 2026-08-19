@@ -4,7 +4,7 @@
  * Toate drepturile rezervate. Copierea, modificarea sau redistribuirea
  * acestui cod fara acordul scris al autorului este interzisa.
  */
-const CACHE = "catalog-v17";
+const CACHE = "catalog-v18";
 const SHELL = [
   "./",
   "./index.html",
@@ -21,9 +21,10 @@ const IMMUTABLE = /\/(data|vendor|icons)\//;
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(CACHE).then((cache) => cache.addAll(SHELL)).then(() =>
-      self.skipWaiting()
-    ),
+    caches
+      .open(CACHE)
+      .then((cache) => cache.addAll(SHELL))
+      .then(() => self.skipWaiting()),
   );
 });
 
@@ -32,9 +33,9 @@ self.addEventListener("activate", (event) => {
     caches
       .keys()
       .then((keys) =>
-        Promise.all(keys.filter((key) => key !== CACHE).map((key) =>
-          caches.delete(key)
-        )),
+        Promise.all(
+          keys.filter((key) => key !== CACHE).map((key) => caches.delete(key)),
+        ),
       )
       .then(() => self.clients.claim()),
   );
@@ -51,20 +52,26 @@ function store(request, response) {
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
   const path = new URL(event.request.url).pathname;
-  const fresh = FRESH.test(path) && !IMMUTABLE.test(path);
+  // a shared list arrives as ?lista=..., so the page itself is matched without the query
+  const navigating = event.request.mode === "navigate";
+  const fresh = navigating || (FRESH.test(path) && !IMMUTABLE.test(path));
   event.respondWith(
     fresh
       ? fetch(event.request)
           .then((response) => store(event.request, response))
           .catch(() =>
-            caches.match(event.request).then((hit) => hit || Response.error())
+            caches
+              .match(event.request, { ignoreSearch: navigating })
+              .then((hit) => hit || Response.error()),
           )
-      : caches.match(event.request).then(
-          (hit) =>
-            hit ||
-            fetch(event.request).then((response) =>
-              store(event.request, response)
-            ),
-        ),
+      : caches
+          .match(event.request)
+          .then(
+            (hit) =>
+              hit ||
+              fetch(event.request).then((response) =>
+                store(event.request, response),
+              ),
+          ),
   );
 });
