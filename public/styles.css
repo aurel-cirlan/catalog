@@ -47,12 +47,12 @@ body::before {
   inset: 0;
   z-index: -1;
   background: url("cover.webp") center / cover no-repeat;
-  opacity: 0.16;
+  opacity: 0.38;
   pointer-events: none;
 }
 
 :root[data-theme="light"] body::before {
-  opacity: 0.12;
+  opacity: 0.3;
 }
 
 body {
