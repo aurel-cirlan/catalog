@@ -36,9 +36,28 @@
   box-sizing: border-box;
 }
 
+html {
+  background: var(--bg);
+}
+
+/* the catalog cover, blurred, as a quiet backdrop */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background: url("cover.webp") center / cover no-repeat;
+  opacity: 0.16;
+  pointer-events: none;
+}
+
+:root[data-theme="light"] body::before {
+  opacity: 0.12;
+}
+
 body {
   margin: 0;
-  background: var(--bg);
+  background: transparent;
   color: var(--text);
   font: 16px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif;
   padding-bottom: env(safe-area-inset-bottom);
@@ -48,7 +67,7 @@ body {
   position: sticky;
   top: 0;
   z-index: 2;
-  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  background: color-mix(in srgb, var(--bg) 82%, transparent);
   backdrop-filter: blur(12px);
   padding: calc(12px + env(safe-area-inset-top)) 14px 8px;
   border-bottom: 1px solid var(--line);
