@@ -142,6 +142,17 @@ body {
   font-weight: 600;
 }
 
+.chipRow.sub {
+  margin-top: 8px;
+  padding-left: 10px;
+  border-left: 2px solid var(--line);
+}
+
+.chipRow.sub button {
+  font-size: 14px;
+  padding: 7px 13px;
+}
+
 [hidden] {
   display: none !important;
 }

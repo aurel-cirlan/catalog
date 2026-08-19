@@ -17,6 +17,10 @@ GLOSSARY = json.loads(
 SECTIONS_RO = json.loads(
     (Path(__file__).with_name("sections_ro.json")).read_text(encoding="utf-8")
 )
+SECTION_GROUPS = json.loads(
+    (Path(__file__).with_name("section_groups.json")).read_text(encoding="utf-8")
+)
+OTHER_GROUP = "Componente"
 # the register pages at the back belong to no profile system
 SKIP_SECTIONS = {"Legende", "Inhalt"}
 
@@ -63,7 +67,13 @@ def sections(doc: pymupdf.Document) -> list[dict]:
         if not name or name in SKIP_SECTIONS:
             continue
         section = found.setdefault(
-            name, {"name": name, "ro": SECTIONS_RO.get(name, name), "pages": []}
+            name,
+            {
+                "name": name,
+                "ro": SECTIONS_RO.get(name, name),
+                "group": SECTION_GROUPS.get(name, OTHER_GROUP),
+                "pages": [],
+            },
         )
         section["pages"].append(number)
     return list(found.values())

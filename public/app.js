@@ -24,6 +24,7 @@ const els = {
   historyList: document.getElementById("historyList"),
   historyClear: document.getElementById("historyClear"),
   sections: document.getElementById("sections"),
+  groupList: document.getElementById("groupList"),
   sectionList: document.getElementById("sectionList"),
   neighbours: document.getElementById("neighbours"),
   theme: document.getElementById("theme"),
@@ -50,6 +51,7 @@ const els = {
 
 let hits = [];
 let sections = [];
+let activeGroup = null;
 let activeSection = null;
 let current = null;
 let zoom = 1;
@@ -184,20 +186,40 @@ function sectionHits(section) {
     .slice(0, MAX_SECTION_RESULTS);
 }
 
+function chip(text, on, onClick) {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.textContent = text;
+  if (on) button.className = "on";
+  button.addEventListener("click", onClick);
+  return button;
+}
+
+// two levels, so a phone screen shows a handful of buttons instead of thirty
 function renderSections() {
   els.sections.hidden = sections.length === 0;
+  els.groupList.replaceChildren();
+  const groups = [...new Set(sections.map((section) => section.group))];
+  for (const group of groups) {
+    els.groupList.append(
+      chip(group, group === activeGroup, () => {
+        activeGroup = group === activeGroup ? null : group;
+        activeSection = null;
+        els.query.value = "";
+        render("");
+      }),
+    );
+  }
+  els.sectionList.hidden = !activeGroup;
   els.sectionList.replaceChildren();
-  for (const section of sections) {
-    const chip = document.createElement("button");
-    chip.type = "button";
-    chip.textContent = section.ro || section.name;
-    chip.className = section === activeSection ? "on" : "";
-    chip.addEventListener("click", () => {
-      activeSection = section === activeSection ? null : section;
-      els.query.value = "";
-      render("");
-    });
-    els.sectionList.append(chip);
+  for (const section of sections.filter((item) => item.group === activeGroup)) {
+    els.sectionList.append(
+      chip(section.ro || section.name, section === activeSection, () => {
+        activeSection = section === activeSection ? null : section;
+        els.query.value = "";
+        render("");
+      }),
+    );
   }
 }
 
@@ -218,6 +240,7 @@ function render(term) {
     renderHistory();
     return;
   }
+  activeGroup = null;
   activeSection = null;
   renderSections();
   els.favourites.hidden = true;
@@ -530,6 +553,7 @@ async function scanLoop() {
 els.query.addEventListener("input", () => render(els.query.value));
 els.clear.addEventListener("click", () => {
   els.query.value = "";
+  activeGroup = null;
   activeSection = null;
   els.query.focus();
   render("");
