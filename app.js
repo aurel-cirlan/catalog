@@ -2,6 +2,7 @@ const FAVOURITES_KEY = "catalog.favourites";
 const HISTORY_KEY = "catalog.history";
 const THEME_KEY = "catalog.theme";
 const MAX_RESULTS = 60;
+const MAX_SECTION_RESULTS = 400;
 const MAX_HISTORY = 8;
 const NEIGHBOUR_LIMIT = 20;
 const CODE_RE = /\d{4}/g;
@@ -16,6 +17,8 @@ const els = {
   history: document.getElementById("history"),
   historyList: document.getElementById("historyList"),
   historyClear: document.getElementById("historyClear"),
+  sections: document.getElementById("sections"),
+  sectionList: document.getElementById("sectionList"),
   neighbours: document.getElementById("neighbours"),
   theme: document.getElementById("theme"),
   share: document.getElementById("share"),
@@ -39,6 +42,8 @@ const els = {
 };
 
 let hits = [];
+let sections = [];
+let activeSection = null;
 let current = null;
 let zoom = 1;
 let naturalWidth = 0;
@@ -161,14 +166,53 @@ function resultCard(hit) {
   return item;
 }
 
+// every article drawn in a catalog section, one card per code
+function sectionHits(section) {
+  const pages = new Set(section.pages);
+  const seen = new Set();
+  return hits
+    .filter((hit) => pages.has(hit.page) && hit.heading)
+    .filter((hit) => !seen.has(hit.code) && seen.add(hit.code))
+    .sort((a, b) => a.page - b.page || a.code.localeCompare(b.code))
+    .slice(0, MAX_SECTION_RESULTS);
+}
+
+function renderSections() {
+  els.sections.hidden = sections.length === 0;
+  els.sectionList.replaceChildren();
+  for (const section of sections) {
+    const chip = document.createElement("button");
+    chip.type = "button";
+    chip.textContent = section.ro || section.name;
+    chip.className = section === activeSection ? "on" : "";
+    chip.addEventListener("click", () => {
+      activeSection = section === activeSection ? null : section;
+      els.query.value = "";
+      render("");
+    });
+    els.sectionList.append(chip);
+  }
+}
+
 function render(term) {
   els.results.replaceChildren();
   if (!term.trim()) {
+    renderSections();
+    if (activeSection) {
+      const matches = sectionHits(activeSection);
+      els.favourites.hidden = true;
+      els.history.hidden = true;
+      els.status.textContent = `${activeSection.ro || activeSection.name} · ${matches.length} articole`;
+      els.results.append(...matches.map(resultCard));
+      return;
+    }
     els.status.textContent = `${hits.length} poziții indexate · caută cod sau denumire`;
     renderFavourites();
     renderHistory();
     return;
   }
+  activeSection = null;
+  renderSections();
   els.favourites.hidden = true;
   els.history.hidden = true;
   const matches = search(term);
@@ -479,6 +523,7 @@ async function scanLoop() {
 els.query.addEventListener("input", () => render(els.query.value));
 els.clear.addEventListener("click", () => {
   els.query.value = "";
+  activeSection = null;
   els.query.focus();
   render("");
 });
@@ -524,7 +569,9 @@ async function boot() {
   try {
     const response = await fetch("data/index.json");
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    hits = flatten(await response.json());
+    const index = await response.json();
+    hits = flatten(index);
+    sections = index.sections || [];
     const shared = location.hash.replace("#", "").trim();
     els.query.value = shared;
     render(shared);
