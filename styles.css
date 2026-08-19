@@ -374,6 +374,38 @@ body {
   padding: 12px;
 }
 
+.guide button.ghost {
+  background: var(--raised);
+  color: var(--text);
+  border: 1px solid var(--line);
+  margin-bottom: 8px;
+}
+
+.tutList {
+  padding: 10px 12px 0;
+}
+
+.tutStage {
+  flex: 1;
+  overflow: auto;
+  padding: 10px 12px calc(16px + env(safe-area-inset-bottom));
+  text-align: center;
+}
+
+.tutText {
+  color: var(--muted);
+  font-size: 14px;
+  margin: 6px 0 10px;
+  text-align: left;
+}
+
+.tutStage img {
+  width: 100%;
+  max-width: 360px;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+}
+
 .printArea {
   display: none;
 }

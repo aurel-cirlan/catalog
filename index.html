@@ -139,7 +139,22 @@
           În pagina articolului: notă proprie, listă de lucru, comparare, print.
         </li>
       </ul>
+      <button id="guideTut" type="button" class="ghost">
+        ▶ Vezi tutoriale
+      </button>
       <button id="guideClose" type="button" class="primary">Am înțeles</button>
+    </dialog>
+
+    <dialog id="tutorials" class="viewer">
+      <div class="viewerBar">
+        <button id="tutClose" type="button">Înapoi</button>
+        <span>Tutoriale</span>
+      </div>
+      <div id="tutList" class="chipRow tutList"></div>
+      <div class="tutStage">
+        <p id="tutText" class="tutText"></p>
+        <img id="tutImage" alt="" />
+      </div>
     </dialog>
 
     <div id="printArea" class="printArea" aria-hidden="true">
