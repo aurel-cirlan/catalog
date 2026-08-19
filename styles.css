@@ -59,7 +59,11 @@ body {
   margin: 0;
   background: transparent;
   color: var(--text);
-  font: 16px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif;
+  font:
+    16px/1.4 system-ui,
+    -apple-system,
+    "Segoe UI",
+    sans-serif;
   padding-bottom: env(safe-area-inset-bottom);
 }
 
@@ -264,10 +268,132 @@ body {
   white-space: nowrap;
 }
 
+.card .cardNote {
+  color: var(--accent);
+  font-size: 13px;
+  margin-top: 4px;
+}
+
 .empty {
   color: var(--muted);
   padding: 24px 4px;
   text-align: center;
+}
+
+.viewerBar.tools button {
+  flex: 1;
+  padding: 11px 8px;
+  font-size: 15px;
+}
+
+.note {
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--text);
+  font-size: 16px;
+  padding: 12px 14px;
+  outline: none;
+}
+
+.note:focus {
+  border-bottom-color: var(--accent);
+}
+
+.compareBody {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  padding: 12px;
+  overflow: auto;
+}
+
+.comparePane {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 10px;
+  text-align: center;
+}
+
+.comparePane img {
+  width: 100%;
+  height: 46vh;
+  object-fit: contain;
+  background: #fff;
+  border-radius: 12px;
+  padding: 6px;
+}
+
+.comparePane .code {
+  font-size: 20px;
+  font-weight: 700;
+  margin-top: 8px;
+}
+
+.comparePane .meta {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.guide {
+  border: 0;
+  border-radius: 18px;
+  background: var(--panel);
+  color: var(--text);
+  max-width: 340px;
+  padding: 18px;
+  box-shadow: var(--lift);
+}
+
+.guide::backdrop {
+  background: rgba(0, 0, 0, 0.6);
+}
+
+.guide h3 {
+  margin: 0 0 10px;
+}
+
+.guide ul {
+  margin: 0 0 16px;
+  padding-left: 18px;
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.guide button {
+  width: 100%;
+  border: 0;
+  border-radius: 12px;
+  background: var(--accent);
+  color: #10151b;
+  font-size: 16px;
+  font-weight: 600;
+  padding: 12px;
+}
+
+.printArea {
+  display: none;
+}
+
+@media print {
+  body > *:not(.printArea) {
+    display: none !important;
+  }
+
+  body::before {
+    display: none;
+  }
+
+  .printArea {
+    display: block;
+  }
+
+  .printArea img {
+    width: 100%;
+  }
 }
 
 .viewer {

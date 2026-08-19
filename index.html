@@ -37,6 +37,7 @@
           📷
         </button>
         <button id="theme" type="button" aria-label="Schimbă tema">☀</button>
+        <button id="help" type="button" aria-label="Cum se folosește">?</button>
       </div>
       <p id="status" class="status">Se încarcă catalogul…</p>
     </header>
@@ -52,6 +53,18 @@
           <button id="historyClear" type="button" class="link">golește</button>
         </h2>
         <div id="historyList" class="chipRow"></div>
+      </section>
+      <section id="worklist" class="chips" hidden>
+        <h2>
+          Listă de lucru
+          <button id="worklistSend" type="button" class="link">trimite</button>
+          <button id="worklistClear" type="button" class="link">golește</button>
+        </h2>
+        <div id="worklistItems" class="chipRow"></div>
+      </section>
+      <section id="depths" class="chips" hidden>
+        <h2>Adâncime constructivă</h2>
+        <div id="depthList" class="chipRow"></div>
       </section>
       <section id="sections" class="chips" hidden>
         <h2>Categorii</h2>
@@ -79,6 +92,19 @@
         <button id="favourite" type="button" aria-label="Favorit">☆</button>
       </div>
       <div id="neighbours" class="chipRow neighbours" hidden></div>
+      <div class="viewerBar tools">
+        <button id="addList" type="button">＋ Listă</button>
+        <button id="compareAdd" type="button">⇄ Compară</button>
+        <button id="printPage" type="button">🖨 Printează</button>
+      </div>
+      <input
+        id="note"
+        class="note"
+        type="text"
+        autocomplete="off"
+        placeholder="Notă proprie (ex. stoc hala 2)"
+        aria-label="Notă proprie"
+      />
       <div id="stage" class="stage">
         <div id="canvas" class="canvas">
           <img id="pageImage" alt="" />
@@ -93,6 +119,33 @@
       </div>
     </dialog>
 
+    <dialog id="compare" class="viewer">
+      <div class="viewerBar">
+        <button id="compareClose" type="button">Înapoi</button>
+        <span>Comparare</span>
+        <button id="compareReset" type="button">Golește</button>
+      </div>
+      <div id="compareBody" class="compareBody"></div>
+    </dialog>
+
+    <dialog id="guide" class="guide">
+      <h3>Cum se folosește</h3>
+      <ul>
+        <li>Scrie codul articolului (ex. 7093) sau denumirea în română.</li>
+        <li>📷 scanează codul cu camera telefonului.</li>
+        <li>Apeși pe rezultat și vezi desenul și pagina din catalog.</li>
+        <li>Categoriile sunt grupate: sisteme, componente, glisante.</li>
+        <li>
+          În pagina articolului: notă proprie, listă de lucru, comparare, print.
+        </li>
+      </ul>
+      <button id="guideClose" type="button" class="primary">Am înțeles</button>
+    </dialog>
+
+    <div id="printArea" class="printArea" aria-hidden="true">
+      <img id="printImage" alt="" />
+    </div>
+
     <dialog id="scanner" class="scanner">
       <div class="viewerBar">
         <button id="scanClose" type="button">Înapoi</button>
@@ -104,7 +157,9 @@
       </div>
       <div class="viewerBar">
         <button id="scanTorch" type="button" hidden>💡 Lumină</button>
-        <button id="scanShot" type="button" class="primary">Citește acum</button>
+        <button id="scanShot" type="button" class="primary">
+          Citește acum
+        </button>
       </div>
     </dialog>
 
