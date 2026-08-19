@@ -36,6 +36,8 @@ const els = {
   sharedClose: document.getElementById("sharedClose"),
   recent: document.getElementById("recent"),
   recentList: document.getElementById("recentList"),
+  recentClear: document.getElementById("recentClear"),
+  favouriteClear: document.getElementById("favouriteClear"),
   worklist: document.getElementById("worklist"),
   worklistTitle: document.getElementById("worklistTitle"),
   worklistItems: document.getElementById("worklistItems"),
@@ -1039,6 +1041,17 @@ els.tutClose.addEventListener("click", () => {
 els.guideClose.addEventListener("click", () => {
   localStorage.setItem(GUIDE_KEY, "1");
   els.guide.close();
+});
+els.recentClear.addEventListener("click", () => {
+  lastOpened = "";
+  localStorage.removeItem(LAST_KEY);
+  renderRecent();
+});
+els.favouriteClear.addEventListener("click", () => {
+  favourites.clear();
+  saveFavourites();
+  renderFavourites();
+  if (current) els.favourite.textContent = "\u2606";
 });
 els.historyClear.addEventListener("click", () => {
   history = [];
