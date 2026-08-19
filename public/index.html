@@ -47,6 +47,8 @@
         <div class="chipRow">
           <button id="sheetScan" type="button">📄 Scanează dispoziția</button>
         </div>
+        <input id="sheetFile" type="file" accept="image/*" hidden />
+        <p id="sheetStatus" class="status" hidden></p>
       </section>
       <section id="shared" class="chips" hidden>
         <h2>
@@ -262,7 +264,6 @@
           Citește acum
         </button>
       </div>
-      <input id="sheetFile" type="file" accept="image/*" hidden />
     </dialog>
 
     <script src="app.js" type="module"></script>
