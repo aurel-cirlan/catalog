@@ -43,6 +43,10 @@
     </header>
 
     <main>
+      <section id="recent" class="chips" hidden>
+        <h2>Ultimul articol deschis</h2>
+        <div id="recentList" class="chipRow"></div>
+      </section>
       <section id="favourites" class="chips" hidden>
         <h2>Favorite</h2>
         <div id="favouriteList" class="chipRow"></div>
@@ -56,7 +60,7 @@
       </section>
       <section id="worklist" class="chips" hidden>
         <h2>
-          Listă de lucru
+          <span id="worklistTitle">Listă de lucru</span>
           <button id="worklistSend" type="button" class="link">trimite</button>
           <button id="worklistClear" type="button" class="link">golește</button>
         </h2>
@@ -89,6 +93,9 @@
         <button id="close" type="button">Înapoi</button>
         <span id="viewerTitle"></span>
         <button id="share" type="button" aria-label="Trimite">⤴</button>
+        <button id="sharePage" type="button" aria-label="Trimite pagina">
+          📄
+        </button>
         <button id="favourite" type="button" aria-label="Favorit">☆</button>
       </div>
       <div id="neighbours" class="chipRow neighbours" hidden></div>
@@ -131,10 +138,14 @@
     <dialog id="guide" class="guide">
       <h3>Cum se folosește</h3>
       <ul>
-        <li>Scrie codul articolului (ex. 7093) sau denumirea în română.</li>
+        <li>
+          Scrie codul (ex. 7093), denumirea în română sau germană, ori sistemul
+          (S 8000).
+        </li>
         <li>📷 scanează codul cu camera telefonului.</li>
         <li>Apeși pe rezultat și vezi desenul și pagina din catalog.</li>
         <li>Categoriile sunt grupate: sisteme, componente, glisante.</li>
+        <li>＋ din dreapta rezultatului adaugă articolul în lista de lucru.</li>
         <li>
           În pagina articolului: notă proprie, listă de lucru, comparare, print.
         </li>
@@ -142,6 +153,13 @@
       <button id="guideTut" type="button" class="ghost">
         ▶ Vezi tutoriale
       </button>
+      <button id="backupSave" type="button" class="ghost">
+        ⬇ Salvează lista și notele
+      </button>
+      <button id="backupLoad" type="button" class="ghost">
+        ⬆ Încarcă lista și notele
+      </button>
+      <input id="backupFile" type="file" accept="application/json" hidden />
       <button id="guideClose" type="button" class="primary">Am înțeles</button>
     </dialog>
 

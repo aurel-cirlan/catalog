@@ -213,6 +213,29 @@ body {
   gap: 10px;
 }
 
+.results li {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.listToggle {
+  flex: none;
+  width: 46px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--panel);
+  color: var(--text);
+  font-size: 20px;
+  box-shadow: var(--lift);
+}
+
+.listToggle.on {
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
 .card {
   display: flex;
   gap: 14px;
@@ -275,6 +298,7 @@ body {
 }
 
 .empty {
+  display: block;
   color: var(--muted);
   padding: 24px 4px;
   text-align: center;

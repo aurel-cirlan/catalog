@@ -10,6 +10,7 @@ const THEME_KEY = "catalog.theme";
 const NOTES_KEY = "catalog.notes";
 const WORKLIST_KEY = "catalog.worklist";
 const GUIDE_KEY = "catalog.guide";
+const LAST_KEY = "catalog.last";
 const MAX_RESULTS = 60;
 const MAX_SECTION_RESULTS = 400;
 const MAX_HISTORY = 8;
@@ -26,7 +27,10 @@ const els = {
   history: document.getElementById("history"),
   historyList: document.getElementById("historyList"),
   historyClear: document.getElementById("historyClear"),
+  recent: document.getElementById("recent"),
+  recentList: document.getElementById("recentList"),
   worklist: document.getElementById("worklist"),
+  worklistTitle: document.getElementById("worklistTitle"),
   worklistItems: document.getElementById("worklistItems"),
   worklistSend: document.getElementById("worklistSend"),
   worklistClear: document.getElementById("worklistClear"),
@@ -38,6 +42,7 @@ const els = {
   neighbours: document.getElementById("neighbours"),
   theme: document.getElementById("theme"),
   share: document.getElementById("share"),
+  sharePage: document.getElementById("sharePage"),
   scan: document.getElementById("scan"),
   scanner: document.getElementById("scanner"),
   scanVideo: document.getElementById("scanVideo"),
@@ -66,6 +71,9 @@ const els = {
   guideClose: document.getElementById("guideClose"),
   help: document.getElementById("help"),
   guideTut: document.getElementById("guideTut"),
+  backupSave: document.getElementById("backupSave"),
+  backupLoad: document.getElementById("backupLoad"),
+  backupFile: document.getElementById("backupFile"),
   tutorials: document.getElementById("tutorials"),
   tutList: document.getElementById("tutList"),
   tutImage: document.getElementById("tutImage"),
@@ -92,6 +100,7 @@ const favourites = new Set(
 let history = JSON.parse(localStorage.getItem(HISTORY_KEY) || "[]");
 const notes = JSON.parse(localStorage.getItem(NOTES_KEY) || "{}");
 let worklist = JSON.parse(localStorage.getItem(WORKLIST_KEY) || "[]");
+let lastOpened = localStorage.getItem(LAST_KEY) || "";
 
 function saveNotes() {
   localStorage.setItem(NOTES_KEY, JSON.stringify(notes));
@@ -129,7 +138,19 @@ function normalise(text) {
     .replace(/ß/g, "ss");
 }
 
+// the catalog section a page belongs to, so "kubus" or "s 8000" also find articles
+function pageSections(index) {
+  const map = new Map();
+  for (const section of index.sections || []) {
+    for (const page of section.pages) {
+      map.set(page, `${section.name} ${section.ro || ""}`);
+    }
+  }
+  return map;
+}
+
 function flatten(index) {
+  const bySection = pageSections(index);
   const flat = [];
   for (const article of index.articles) {
     for (const hit of article.hits) {
@@ -137,7 +158,9 @@ function flatten(index) {
         code: article.code,
         name: article.name,
         ro: article.ro,
-        haystack: normalise(`${article.name} ${article.ro}`),
+        haystack: normalise(
+          `${article.name} ${article.ro} ${bySection.get(hit.page) || ""}`,
+        ),
         ...hit,
       });
     }
@@ -220,8 +243,37 @@ function resultCard(hit) {
     remember(els.query.value);
     open(hit);
   });
-  item.append(button);
+  item.append(button, listToggle(hit.code));
   return item;
+}
+
+// add or drop a code without leaving the result list
+function listToggle(code) {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "listToggle";
+  const paint = () => {
+    const inList = worklist.includes(code);
+    button.textContent = inList ? "\u2212" : "\uff0b";
+    button.classList.toggle("on", inList);
+    button.setAttribute(
+      "aria-label",
+      inList
+        ? `Scoate ${code} din list\u0103`
+        : `Adaug\u0103 ${code} \u00een list\u0103`,
+    );
+  };
+  paint();
+  button.addEventListener("click", () => {
+    worklist = worklist.includes(code)
+      ? worklist.filter((item) => item !== code)
+      : [...worklist, code];
+    saveWorklist();
+    paint();
+    renderWorklist();
+    updateListButton();
+  });
+  return button;
 }
 
 // every article drawn in a catalog section, one card per code
@@ -304,6 +356,7 @@ function render(term) {
     renderWorklist();
     if (activeSection) {
       const matches = sectionHits(activeSection);
+      els.recent.hidden = true;
       els.favourites.hidden = true;
       els.history.hidden = true;
       els.status.textContent = `${activeSection.ro || activeSection.name} · ${matches.length} articole`;
@@ -311,6 +364,7 @@ function render(term) {
       return;
     }
     els.status.textContent = `${hits.length} poziții indexate · caută cod sau denumire`;
+    renderRecent();
     renderFavourites();
     renderHistory();
     return;
@@ -321,6 +375,7 @@ function render(term) {
   renderDepths();
   renderSections();
   els.worklist.hidden = true;
+  els.recent.hidden = true;
   els.favourites.hidden = true;
   els.history.hidden = true;
   const matches = search(term);
@@ -349,6 +404,17 @@ function renderFavourites() {
     chip.addEventListener("click", () => open(hit));
     els.favouriteList.append(chip);
   }
+}
+
+// one tap back into the drawing that was open last time
+function renderRecent() {
+  const hit = lastOpened ? hitByCode(lastOpened) : null;
+  els.recent.hidden = !hit;
+  els.recentList.replaceChildren();
+  if (!hit) return;
+  els.recentList.append(
+    chip(`${hit.code} · p.${hit.page}`, false, () => open(hit)),
+  );
 }
 
 function renderHistory() {
@@ -413,6 +479,7 @@ function hitByCode(code) {
 // a short pick list the user builds while walking the shop, sent in one message
 function renderWorklist() {
   els.worklist.hidden = worklist.length === 0;
+  els.worklistTitle.textContent = `List\u0103 de lucru (${worklist.length})`;
   els.worklistItems.replaceChildren();
   for (const code of worklist) {
     const hit = hitByCode(code);
@@ -526,7 +593,7 @@ function renderNeighbours(hit) {
   }
 }
 
-async function shareCurrent() {
+async function shareCurrent(withPage) {
   if (!current) return;
   const link = `${location.origin}${location.pathname}#${current.code}`;
   const name = label(current);
@@ -534,11 +601,23 @@ async function shareCurrent() {
     current.page
   }\n${link}`;
   try {
-    let files = [];
+    const sources = withPage
+      ? [
+          [
+            `data/pages/${String(current.page).padStart(3, "0")}.webp`,
+            `pagina-${current.page}.webp`,
+          ],
+        ]
+      : [];
     if (current.thumb) {
-      const blob = await (await fetch(`data/thumbs/${current.thumb}`)).blob();
-      files = [new File([blob], `${current.code}.webp`, { type: blob.type })];
+      sources.unshift([`data/thumbs/${current.thumb}`, `${current.code}.webp`]);
     }
+    const files = await Promise.all(
+      sources.map(async ([url, name]) => {
+        const blob = await (await fetch(url)).blob();
+        return new File([blob], name, { type: blob.type });
+      }),
+    );
     if (files.length && navigator.canShare?.({ files })) {
       await navigator.share({ files, text });
       return;
@@ -587,6 +666,8 @@ function scrollToMarker() {
 
 function open(hit) {
   current = hit;
+  lastOpened = hit.code;
+  localStorage.setItem(LAST_KEY, lastOpened);
   els.viewerTitle.textContent = `${hit.code} · pagina ${hit.page}`;
   els.favourite.textContent = favourites.has(keyOf(hit)) ? "★" : "☆";
   els.note.value = notes[hit.code] || "";
@@ -791,7 +872,8 @@ els.zoomOut.addEventListener("click", () => {
   scrollToMarker();
 });
 els.fit.addEventListener("click", fitPage);
-els.share.addEventListener("click", shareCurrent);
+els.share.addEventListener("click", () => shareCurrent(false));
+els.sharePage.addEventListener("click", () => shareCurrent(true));
 els.theme.addEventListener("click", () =>
   applyTheme(
     document.documentElement.dataset.theme === "light" ? "dark" : "light",
@@ -834,6 +916,13 @@ els.compareReset.addEventListener("click", () => {
 });
 els.printPage.addEventListener("click", printCurrent);
 els.help.addEventListener("click", () => els.guide.showModal());
+els.backupSave.addEventListener("click", saveBackup);
+els.backupLoad.addEventListener("click", () => els.backupFile.click());
+els.backupFile.addEventListener("change", async () => {
+  const file = els.backupFile.files[0];
+  els.backupFile.value = "";
+  if (file) await loadBackup(file);
+});
 els.guideTut.addEventListener("click", () => {
   localStorage.setItem(GUIDE_KEY, "1");
   els.guide.close();
@@ -862,6 +951,57 @@ els.favourite.addEventListener("click", () => {
   els.favourite.textContent = favourites.has(key) ? "★" : "☆";
   renderFavourites();
 });
+
+// a small file the user can send to the new phone, so notes and list survive
+function saveBackup() {
+  const data = {
+    app: "catalog",
+    date: new Date().toISOString(),
+    notes,
+    worklist,
+    favourites: [...favourites],
+    history,
+  };
+  const url = URL.createObjectURL(
+    new Blob([JSON.stringify(data, null, 2)], { type: "application/json" }),
+  );
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "catalog-date.json";
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+async function loadBackup(file) {
+  try {
+    const data = JSON.parse(await file.text());
+    if (data.notes && typeof data.notes === "object") {
+      Object.assign(notes, data.notes);
+      saveNotes();
+    }
+    if (Array.isArray(data.worklist)) {
+      worklist = [...new Set([...worklist, ...data.worklist])];
+      saveWorklist();
+    }
+    if (Array.isArray(data.favourites)) {
+      data.favourites.forEach((key) => favourites.add(key));
+      saveFavourites();
+    }
+    if (Array.isArray(data.history)) {
+      history = [...new Set([...data.history, ...history])].slice(
+        0,
+        MAX_HISTORY,
+      );
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+    }
+    els.guide.close();
+    els.query.value = "";
+    render("");
+    els.status.textContent = "Datele au fost încărcate";
+  } catch {
+    els.status.textContent = "Fișierul nu a putut fi citit";
+  }
+}
 
 async function boot() {
   try {
