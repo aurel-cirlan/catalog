@@ -7,6 +7,9 @@
 const FAVOURITES_KEY = "catalog.favourites";
 const HISTORY_KEY = "catalog.history";
 const THEME_KEY = "catalog.theme";
+const NOTES_KEY = "catalog.notes";
+const WORKLIST_KEY = "catalog.worklist";
+const GUIDE_KEY = "catalog.guide";
 const MAX_RESULTS = 60;
 const MAX_SECTION_RESULTS = 400;
 const MAX_HISTORY = 8;
@@ -23,6 +26,12 @@ const els = {
   history: document.getElementById("history"),
   historyList: document.getElementById("historyList"),
   historyClear: document.getElementById("historyClear"),
+  worklist: document.getElementById("worklist"),
+  worklistItems: document.getElementById("worklistItems"),
+  worklistSend: document.getElementById("worklistSend"),
+  worklistClear: document.getElementById("worklistClear"),
+  depths: document.getElementById("depths"),
+  depthList: document.getElementById("depthList"),
   sections: document.getElementById("sections"),
   groupList: document.getElementById("groupList"),
   sectionList: document.getElementById("sectionList"),
@@ -44,6 +53,18 @@ const els = {
   watermark: document.querySelector(".watermark"),
   close: document.getElementById("close"),
   favourite: document.getElementById("favourite"),
+  note: document.getElementById("note"),
+  addList: document.getElementById("addList"),
+  compareAdd: document.getElementById("compareAdd"),
+  printPage: document.getElementById("printPage"),
+  printImage: document.getElementById("printImage"),
+  compare: document.getElementById("compare"),
+  compareBody: document.getElementById("compareBody"),
+  compareClose: document.getElementById("compareClose"),
+  compareReset: document.getElementById("compareReset"),
+  guide: document.getElementById("guide"),
+  guideClose: document.getElementById("guideClose"),
+  help: document.getElementById("help"),
   zoomIn: document.getElementById("zoomIn"),
   zoomOut: document.getElementById("zoomOut"),
   fit: document.getElementById("fit"),
@@ -52,7 +73,9 @@ const els = {
 let hits = [];
 let sections = [];
 let activeGroup = null;
+let activeDepth = null;
 let activeSection = null;
+let comparing = [];
 let current = null;
 let zoom = 1;
 let naturalWidth = 0;
@@ -61,6 +84,16 @@ const favourites = new Set(
   JSON.parse(localStorage.getItem(FAVOURITES_KEY) || "[]"),
 );
 let history = JSON.parse(localStorage.getItem(HISTORY_KEY) || "[]");
+const notes = JSON.parse(localStorage.getItem(NOTES_KEY) || "{}");
+let worklist = JSON.parse(localStorage.getItem(WORKLIST_KEY) || "[]");
+
+function saveNotes() {
+  localStorage.setItem(NOTES_KEY, JSON.stringify(notes));
+}
+
+function saveWorklist() {
+  localStorage.setItem(WORKLIST_KEY, JSON.stringify(worklist));
+}
 
 function saveFavourites() {
   localStorage.setItem(FAVOURITES_KEY, JSON.stringify([...favourites]));
@@ -112,7 +145,11 @@ function search(term) {
   const digits = clean.replace(/\D/g, "");
   const matches = hits.filter((hit) => {
     if (digits.length >= 2 && hit.code.includes(digits)) return true;
-    return clean.length >= 2 && hit.haystack.includes(clean);
+    if (clean.length < 2) return false;
+    const note = notes[hit.code];
+    return (
+      hit.haystack.includes(clean) || (note && normalise(note).includes(clean))
+    );
   });
   return matches
     .sort((a, b) => {
@@ -161,6 +198,12 @@ function resultCard(hit) {
   meta.className = "meta";
   meta.textContent = label(hit);
   text.append(code, meta);
+  if (notes[hit.code]) {
+    const note = document.createElement("div");
+    note.className = "cardNote";
+    note.textContent = `\u270e ${notes[hit.code]}`;
+    text.append(note);
+  }
 
   const page = document.createElement("div");
   page.className = "page";
@@ -195,6 +238,26 @@ function chip(text, on, onClick) {
   return button;
 }
 
+// the building depth of a profile system, the way the workshop asks for it
+function renderDepths() {
+  const depths = [
+    ...new Set(sections.map((section) => section.depth).filter(Boolean)),
+  ];
+  els.depths.hidden = depths.length === 0;
+  els.depthList.replaceChildren();
+  for (const depth of depths) {
+    els.depthList.append(
+      chip(depth, depth === activeDepth, () => {
+        activeDepth = depth === activeDepth ? null : depth;
+        activeGroup = null;
+        activeSection = null;
+        els.query.value = "";
+        render("");
+      }),
+    );
+  }
+}
+
 // two levels, so a phone screen shows a handful of buttons instead of thirty
 function renderSections() {
   els.sections.hidden = sections.length === 0;
@@ -204,15 +267,19 @@ function renderSections() {
     els.groupList.append(
       chip(group, group === activeGroup, () => {
         activeGroup = group === activeGroup ? null : group;
+        activeDepth = null;
         activeSection = null;
         els.query.value = "";
         render("");
       }),
     );
   }
-  els.sectionList.hidden = !activeGroup;
+  const shown = activeDepth
+    ? sections.filter((item) => item.depth === activeDepth)
+    : sections.filter((item) => item.group === activeGroup);
+  els.sectionList.hidden = !shown.length;
   els.sectionList.replaceChildren();
-  for (const section of sections.filter((item) => item.group === activeGroup)) {
+  for (const section of shown) {
     els.sectionList.append(
       chip(section.ro || section.name, section === activeSection, () => {
         activeSection = section === activeSection ? null : section;
@@ -226,7 +293,9 @@ function renderSections() {
 function render(term) {
   els.results.replaceChildren();
   if (!term.trim()) {
+    renderDepths();
     renderSections();
+    renderWorklist();
     if (activeSection) {
       const matches = sectionHits(activeSection);
       els.favourites.hidden = true;
@@ -241,8 +310,11 @@ function render(term) {
     return;
   }
   activeGroup = null;
+  activeDepth = null;
   activeSection = null;
+  renderDepths();
   renderSections();
+  els.worklist.hidden = true;
   els.favourites.hidden = true;
   els.history.hidden = true;
   const matches = search(term);
@@ -286,6 +358,110 @@ function renderHistory() {
     });
     els.historyList.append(chip);
   }
+}
+
+function hitByCode(code) {
+  return (
+    hits.find((item) => item.code === code && item.heading) ||
+    hits.find((item) => item.code === code)
+  );
+}
+
+// a short pick list the user builds while walking the shop, sent in one message
+function renderWorklist() {
+  els.worklist.hidden = worklist.length === 0;
+  els.worklistItems.replaceChildren();
+  for (const code of worklist) {
+    const hit = hitByCode(code);
+    if (!hit) continue;
+    els.worklistItems.append(
+      chip(`${code} · p.${hit.page}`, false, () => open(hit)),
+    );
+  }
+}
+
+function worklistText() {
+  const link = `${location.origin}${location.pathname}`;
+  const lines = worklist.map((code) => {
+    const hit = hitByCode(code);
+    const name = hit ? label(hit) : "";
+    const page = hit ? ` · pagina ${hit.page}` : "";
+    return `${code}${name ? ` · ${name}` : ""}${page}`;
+  });
+  return `Listă articole catalog:\n${lines.join("\n")}\n${link}`;
+}
+
+async function sendWorklist() {
+  if (!worklist.length) return;
+  const text = worklistText();
+  try {
+    if (navigator.share) {
+      await navigator.share({ text });
+      return;
+    }
+  } catch (error) {
+    if (error.name === "AbortError") return;
+  }
+  window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
+}
+
+function updateListButton() {
+  const inList = current && worklist.includes(current.code);
+  els.addList.textContent = inList ? "\u2212 Listă" : "\uff0b Listă";
+}
+
+// two drawings next to each other, for choosing between similar profiles
+function renderCompare() {
+  els.compareBody.replaceChildren();
+  for (const hit of comparing) {
+    const pane = document.createElement("div");
+    pane.className = "comparePane";
+    if (hit.thumb) {
+      const img = document.createElement("img");
+      img.src = `data/thumbs/${hit.thumb}`;
+      img.alt = `Articol ${hit.code}`;
+      pane.append(img);
+    }
+    const code = document.createElement("div");
+    code.className = "code";
+    code.textContent = `${hit.code} · p.${hit.page}`;
+    const meta = document.createElement("div");
+    meta.className = "meta";
+    meta.textContent = label(hit);
+    pane.append(code, meta);
+    if (notes[hit.code]) {
+      const note = document.createElement("div");
+      note.className = "cardNote";
+      note.textContent = `\u270e ${notes[hit.code]}`;
+      pane.append(note);
+    }
+    els.compareBody.append(pane);
+  }
+}
+
+function addToCompare() {
+  if (!current) return;
+  comparing = [
+    ...comparing.filter((hit) => hit.code !== current.code),
+    current,
+  ];
+  comparing = comparing.slice(-2);
+  if (comparing.length < 2) {
+    els.compareAdd.textContent = "⇄ Al doilea?";
+    return;
+  }
+  els.compareAdd.textContent = "⇄ Compară";
+  renderCompare();
+  els.compare.showModal();
+}
+
+// prints only the catalog page, so it can also be saved as PDF from the print dialog
+function printCurrent() {
+  if (!current) return;
+  els.printImage.src = els.pageImage.src;
+  const run = () => window.print();
+  if (els.printImage.complete) run();
+  else els.printImage.onload = run;
 }
 
 // the other articles printed on the same catalog page, usually parts that fit together
@@ -370,6 +546,8 @@ function open(hit) {
   current = hit;
   els.viewerTitle.textContent = `${hit.code} · pagina ${hit.page}`;
   els.favourite.textContent = favourites.has(keyOf(hit)) ? "★" : "☆";
+  els.note.value = notes[hit.code] || "";
+  updateListButton();
   els.pageImage.src = `data/pages/${String(hit.page).padStart(3, "0")}.webp`;
   els.pageImage.alt = `Pagina ${hit.page}`;
   renderNeighbours(hit);
@@ -581,6 +759,42 @@ els.scanShot.addEventListener("click", scanLoop);
 els.scanTorch.addEventListener("click", toggleTorch);
 els.scanClose.addEventListener("click", closeScanner);
 els.scanner.addEventListener("close", closeScanner);
+els.note.addEventListener("input", () => {
+  if (!current) return;
+  const text = els.note.value.trim();
+  if (text) notes[current.code] = text;
+  else delete notes[current.code];
+  saveNotes();
+});
+els.addList.addEventListener("click", () => {
+  if (!current) return;
+  worklist = worklist.includes(current.code)
+    ? worklist.filter((code) => code !== current.code)
+    : [...worklist, current.code];
+  saveWorklist();
+  updateListButton();
+  renderWorklist();
+});
+els.worklistSend.addEventListener("click", sendWorklist);
+els.worklistClear.addEventListener("click", () => {
+  worklist = [];
+  saveWorklist();
+  renderWorklist();
+  updateListButton();
+});
+els.compareAdd.addEventListener("click", addToCompare);
+els.compareClose.addEventListener("click", () => els.compare.close());
+els.compareReset.addEventListener("click", () => {
+  comparing = [];
+  els.compareAdd.textContent = "⇄ Compară";
+  els.compare.close();
+});
+els.printPage.addEventListener("click", printCurrent);
+els.help.addEventListener("click", () => els.guide.showModal());
+els.guideClose.addEventListener("click", () => {
+  localStorage.setItem(GUIDE_KEY, "1");
+  els.guide.close();
+});
 els.historyClear.addEventListener("click", () => {
   history = [];
   localStorage.removeItem(HISTORY_KEY);
@@ -606,7 +820,8 @@ async function boot() {
     const shared = location.hash.replace("#", "").trim();
     els.query.value = shared;
     render(shared);
-    if (!shared) els.query.focus();
+    if (!localStorage.getItem(GUIDE_KEY)) els.guide.showModal();
+    else if (!shared) els.query.focus();
   } catch (error) {
     els.status.textContent = `Catalogul nu a putut fi încărcat: ${error.message}`;
   }
@@ -624,11 +839,14 @@ if ("serviceWorker" in navigator) {
     reloading = true;
     location.reload();
   });
-  navigator.serviceWorker.register("sw.js").then((registration) => {
-    document.addEventListener("visibilitychange", () => {
-      if (!document.hidden) registration.update();
-    });
-  }, () => {});
+  navigator.serviceWorker.register("sw.js").then(
+    (registration) => {
+      document.addEventListener("visibilitychange", () => {
+        if (!document.hidden) registration.update();
+      });
+    },
+    () => {},
+  );
 }
 
 boot();

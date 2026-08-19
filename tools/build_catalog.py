@@ -20,6 +20,9 @@ SECTIONS_RO = json.loads(
 SECTION_GROUPS = json.loads(
     (Path(__file__).with_name("section_groups.json")).read_text(encoding="utf-8")
 )
+SECTION_DEPTH = json.loads(
+    (Path(__file__).with_name("sections_depth.json")).read_text(encoding="utf-8")
+)
 OTHER_GROUP = "Componente"
 # the register pages at the back belong to no profile system
 SKIP_SECTIONS = {"Legende", "Inhalt"}
@@ -72,6 +75,9 @@ def sections(doc: pymupdf.Document) -> list[dict]:
                 "name": name,
                 "ro": SECTIONS_RO.get(name, name),
                 "group": SECTION_GROUPS.get(name, OTHER_GROUP),
+                **(
+                    {"depth": SECTION_DEPTH[name]} if name in SECTION_DEPTH else {}
+                ),
                 "pages": [],
             },
         )
