@@ -304,11 +304,28 @@ body {
 .canvas {
   position: relative;
   width: max-content;
+  overflow: hidden;
 }
 
 .canvas img {
   display: block;
   background: #fff;
+}
+
+/* discreet ownership mark over the catalog page */
+.watermark {
+  position: absolute;
+  inset: -30%;
+  transform: rotate(-30deg);
+  color: #111418;
+  opacity: 0.07;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 3.2;
+  word-spacing: 26px;
+  overflow: hidden;
+  pointer-events: none;
+  user-select: none;
 }
 
 .marker {
@@ -343,6 +360,13 @@ body {
 .credit a {
   color: var(--accent);
   text-decoration: none;
+}
+
+.credit small {
+  display: block;
+  margin-top: 6px;
+  font-size: 11px;
+  opacity: 0.75;
 }
 
 .viewerBar button.primary {
