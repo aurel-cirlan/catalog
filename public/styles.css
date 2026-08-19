@@ -1,0 +1,227 @@
+:root {
+  --bg: #111418;
+  --panel: #1b2027;
+  --line: #2b323c;
+  --text: #f2f5f8;
+  --muted: #9aa5b1;
+  --accent: #ffb020;
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 16px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.bar {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--bg);
+  padding: 12px 12px 6px;
+  border-bottom: 1px solid var(--line);
+}
+
+.search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 0 8px 0 12px;
+}
+
+.search input {
+  flex: 1;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font-size: 20px;
+  padding: 14px 0;
+  outline: none;
+}
+
+.search button {
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 26px;
+  line-height: 1;
+  padding: 6px 10px;
+}
+
+.status {
+  margin: 8px 2px 4px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.chips {
+  padding: 8px 12px 0;
+}
+
+.chips h2 {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  margin: 8px 0;
+}
+
+.chipRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chipRow button {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  color: var(--text);
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-size: 15px;
+}
+
+.results {
+  list-style: none;
+  margin: 0;
+  padding: 8px 12px 24px;
+  display: grid;
+  gap: 10px;
+}
+
+.card {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  width: 100%;
+  text-align: left;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 10px;
+  color: inherit;
+}
+
+.card img {
+  width: 108px;
+  height: 84px;
+  object-fit: contain;
+  background: #fff;
+  border-radius: 8px;
+  flex: none;
+}
+
+.card .code {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.card .meta {
+  color: var(--muted);
+  font-size: 13px;
+  margin-top: 2px;
+}
+
+.card .page {
+  margin-left: auto;
+  color: var(--accent);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.empty {
+  color: var(--muted);
+  padding: 24px 4px;
+  text-align: center;
+}
+
+.viewer {
+  width: 100%;
+  max-width: none;
+  height: 100%;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.viewer::backdrop {
+  background: #000;
+}
+
+.viewer[open] {
+  display: flex;
+  flex-direction: column;
+}
+
+.viewerBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line);
+  font-size: 14px;
+}
+
+.viewerBar:last-child {
+  border-bottom: 0;
+  border-top: 1px solid var(--line);
+  padding-bottom: calc(10px + env(safe-area-inset-bottom));
+}
+
+.viewerBar button {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  color: var(--text);
+  border-radius: 10px;
+  padding: 10px 16px;
+  font-size: 16px;
+}
+
+.viewerBar span {
+  flex: 1;
+  text-align: center;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stage {
+  flex: 1;
+  overflow: auto;
+  background: #0b0d10;
+  -webkit-overflow-scrolling: touch;
+}
+
+.canvas {
+  position: relative;
+  width: max-content;
+}
+
+.canvas img {
+  display: block;
+  background: #fff;
+}
+
+.marker {
+  position: absolute;
+  border: 3px solid var(--accent);
+  border-radius: 6px;
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.35);
+  pointer-events: none;
+}
