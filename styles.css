@@ -95,6 +95,8 @@ body {
 
 .search input {
   flex: 1;
+  /* without this the field keeps its default width and pushes the buttons off screen */
+  min-width: 0;
   border: 0;
   background: transparent;
   color: var(--text);
