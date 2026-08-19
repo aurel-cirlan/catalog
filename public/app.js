@@ -21,6 +21,7 @@ const els = {
   scanVideo: document.getElementById("scanVideo"),
   scanShot: document.getElementById("scanShot"),
   scanClose: document.getElementById("scanClose"),
+  scanTorch: document.getElementById("scanTorch"),
   scanStatus: document.getElementById("scanStatus"),
   viewer: document.getElementById("viewer"),
   viewerTitle: document.getElementById("viewerTitle"),
@@ -293,6 +294,8 @@ function fitPage() {
 
 let recogniser = null;
 let stream = null;
+let scanning = false;
+let torchOn = false;
 
 function loadScript(src) {
   return new Promise((resolve, reject) => {
@@ -313,22 +316,32 @@ async function getRecogniser() {
     langPath: new URL("vendor/tessdata", location.href).href,
     gzip: true,
   });
-  await recogniser.setParameters({
-    tessedit_char_whitelist: "0123456789",
-    tessedit_pageseg_mode: "11",
-  });
+  await recogniser.setParameters({ tessedit_char_whitelist: "0123456789" });
   return recogniser;
 }
 
-function shot() {
+// crop of the video behind the on-screen frame, enlarged and hardened for OCR
+function shot(part) {
   const video = els.scanVideo;
-  const scale = Math.min(1600 / video.videoWidth, 2);
+  const width = Math.round(video.videoWidth * part);
+  const height = Math.round(video.videoHeight * part * 0.6);
+  const scale = Math.min(1400 / width, 4);
   const canvas = document.createElement("canvas");
-  canvas.width = Math.round(video.videoWidth * scale);
-  canvas.height = Math.round(video.videoHeight * scale);
+  canvas.width = Math.round(width * scale);
+  canvas.height = Math.round(height * scale);
   const context = canvas.getContext("2d");
-  context.filter = "grayscale(1) contrast(1.6)";
-  context.drawImage(video, 0, 0, canvas.width, canvas.height);
+  context.filter = "grayscale(1) contrast(2) brightness(1.15)";
+  context.drawImage(
+    video,
+    Math.round((video.videoWidth - width) / 2),
+    Math.round((video.videoHeight - height) / 2),
+    width,
+    height,
+    0,
+    0,
+    canvas.width,
+    canvas.height,
+  );
   return canvas;
 }
 
@@ -337,7 +350,7 @@ function centredCode(words, canvas) {
   const middle = { x: canvas.width / 2, y: canvas.height / 2 };
   const found = words
     .map((word) => ({
-      code: (word.text.match(CODE_RE) || [])[0],
+      code: (word.text.replace(/\s+/g, "").match(CODE_RE) || [])[0],
       distance: Math.hypot(
         (word.bbox.x0 + word.bbox.x1) / 2 - middle.x,
         (word.bbox.y0 + word.bbox.y1) / 2 - middle.y,
@@ -352,46 +365,91 @@ function centredCode(words, canvas) {
 async function openScanner() {
   try {
     stream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: { ideal: "environment" } },
+      video: {
+        facingMode: { ideal: "environment" },
+        width: { ideal: 1920 },
+        height: { ideal: 1080 },
+      },
     });
   } catch {
     els.status.textContent = "Camera nu este disponibilă";
     return;
   }
-  els.scanStatus.textContent = "Ține codul în mijloc";
+  torchOn = false;
+  els.scanTorch.hidden = !track()?.getCapabilities?.().torch;
+  els.scanStatus.textContent = "Se pregătește…";
   els.scanVideo.srcObject = stream;
   await els.scanVideo.play();
   els.scanner.showModal();
+  scanLoop();
+}
+
+function track() {
+  return stream?.getVideoTracks()[0];
+}
+
+async function toggleTorch() {
+  torchOn = !torchOn;
+  try {
+    await track()?.applyConstraints({ advanced: [{ torch: torchOn }] });
+  } catch {
+    els.scanTorch.hidden = true;
+  }
 }
 
 function closeScanner() {
-  if (stream) stream.getTracks().forEach((track) => track.stop());
+  scanning = false;
+  if (stream) stream.getTracks().forEach((item) => item.stop());
   stream = null;
   els.scanVideo.srcObject = null;
   if (els.scanner.open) els.scanner.close();
 }
 
-async function readCode() {
-  if (!els.scanVideo.videoWidth) return;
-  els.scanShot.disabled = true;
-  els.scanStatus.textContent = "Se citește…";
-  try {
-    const worker = await getRecogniser();
-    const canvas = shot();
-    const result = await worker.recognize(canvas);
-    const found = centredCode(result.data.words || [], canvas);
-    if (!found) {
-      els.scanStatus.textContent = "Nu am găsit niciun cod, mai încearcă";
+function useCode(code) {
+  closeScanner();
+  els.query.value = code;
+  remember(code);
+  render(code);
+}
+
+// one pass over the current frame; alternates crop and layout mode each round
+async function readFrame(round) {
+  const worker = await getRecogniser();
+  const canvas = shot(round % 2 ? 0.95 : 0.65);
+  await worker.setParameters({
+    tessedit_pageseg_mode: round % 4 < 2 ? "11" : "6",
+  });
+  const result = await worker.recognize(canvas);
+  const words = result.data.words || [];
+  return {
+    code: centredCode(words, canvas),
+    seen: words.flatMap((word) => word.text.match(CODE_RE) || [])[0],
+  };
+}
+
+// keeps reading frames until a catalog code shows up, so nothing has to be timed
+async function scanLoop() {
+  if (scanning) return;
+  scanning = true;
+  for (let round = 0; scanning; round += 1) {
+    if (!els.scanVideo.videoWidth) {
+      await new Promise((resolve) => setTimeout(resolve, 200));
+      continue;
+    }
+    try {
+      const { code, seen } = await readFrame(round);
+      if (!scanning) return;
+      if (code) {
+        useCode(code);
+        return;
+      }
+      els.scanStatus.textContent = seen
+        ? `Am citit ${seen}, dar nu e în catalog`
+        : "Caut codul… ține telefonul nemișcat";
+    } catch {
+      els.scanStatus.textContent = "Scanarea nu a putut porni";
       return;
     }
-    closeScanner();
-    els.query.value = found;
-    remember(found);
-    render(found);
-  } catch {
-    els.scanStatus.textContent = "Scanarea nu a putut porni";
-  } finally {
-    els.scanShot.disabled = false;
   }
 }
 
@@ -420,7 +478,8 @@ els.theme.addEventListener("click", () =>
   ),
 );
 els.scan.addEventListener("click", openScanner);
-els.scanShot.addEventListener("click", readCode);
+els.scanShot.addEventListener("click", scanLoop);
+els.scanTorch.addEventListener("click", toggleTorch);
 els.scanClose.addEventListener("click", closeScanner);
 els.scanner.addEventListener("close", closeScanner);
 els.favourite.addEventListener("click", () => {
