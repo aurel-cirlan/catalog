@@ -65,6 +65,12 @@ const els = {
   guide: document.getElementById("guide"),
   guideClose: document.getElementById("guideClose"),
   help: document.getElementById("help"),
+  guideTut: document.getElementById("guideTut"),
+  tutorials: document.getElementById("tutorials"),
+  tutList: document.getElementById("tutList"),
+  tutImage: document.getElementById("tutImage"),
+  tutText: document.getElementById("tutText"),
+  tutClose: document.getElementById("tutClose"),
   zoomIn: document.getElementById("zoomIn"),
   zoomOut: document.getElementById("zoomOut"),
   fit: document.getElementById("fit"),
@@ -358,6 +364,43 @@ function renderHistory() {
     });
     els.historyList.append(chip);
   }
+}
+
+// short screen recordings of the app itself, made with tools/make_tutorials.py
+const TUTORIALS = [
+  {
+    file: "cod.gif",
+    name: "Caută după cod",
+    text: "Scrie codul (ex. 7093), apasă pe rezultat și vezi pagina din catalog cu codul încadrat. Cu + / − mărești desenul.",
+  },
+  {
+    file: "denumire.gif",
+    name: "Caută după denumire",
+    text: "Nu știi codul? Scrie denumirea în română: garnitură, cercevea, prag, montant.",
+  },
+  {
+    file: "categorii.gif",
+    name: "Categorii",
+    text: "Apasă o grupă (Sisteme, Componente, Glisante), apoi sistemul dorit — ex. S 8000.",
+  },
+  {
+    file: "lista.gif",
+    name: "Listă și note",
+    text: "În pagina articolului: ＋ Listă îl adaugă la lista de lucru, iar nota proprie rămâne pe telefonul tău.",
+  },
+];
+
+function showTutorial(index) {
+  const tutorial = TUTORIALS[index];
+  els.tutImage.src = `tut/${tutorial.file}`;
+  els.tutImage.alt = tutorial.name;
+  els.tutText.textContent = tutorial.text;
+  els.tutList.replaceChildren();
+  TUTORIALS.forEach((item, position) => {
+    els.tutList.append(
+      chip(item.name, position === index, () => showTutorial(position)),
+    );
+  });
 }
 
 function hitByCode(code) {
@@ -791,6 +834,16 @@ els.compareReset.addEventListener("click", () => {
 });
 els.printPage.addEventListener("click", printCurrent);
 els.help.addEventListener("click", () => els.guide.showModal());
+els.guideTut.addEventListener("click", () => {
+  localStorage.setItem(GUIDE_KEY, "1");
+  els.guide.close();
+  showTutorial(0);
+  els.tutorials.showModal();
+});
+els.tutClose.addEventListener("click", () => {
+  els.tutImage.removeAttribute("src");
+  els.tutorials.close();
+});
 els.guideClose.addEventListener("click", () => {
   localStorage.setItem(GUIDE_KEY, "1");
   els.guide.close();
