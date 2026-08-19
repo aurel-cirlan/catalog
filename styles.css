@@ -103,6 +103,35 @@ body {
   font-size: 15px;
 }
 
+[hidden] {
+  display: none !important;
+}
+
+.chips h2 .link {
+  background: none;
+  border: 0;
+  color: var(--accent);
+  font: inherit;
+  text-transform: none;
+  letter-spacing: 0;
+  margin-left: 8px;
+}
+
+/* other articles on the same catalog page, scrolled sideways above the page */
+.neighbours {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  gap: 6px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.neighbours button {
+  flex: none;
+  padding: 6px 12px;
+  font-size: 14px;
+}
+
 .results {
   list-style: none;
   margin: 0;
