@@ -65,6 +65,7 @@ const els = {
   scanSheet: document.getElementById("scanSheet"),
   sheetScan: document.getElementById("sheetScan"),
   sheetFile: document.getElementById("sheetFile"),
+  sheetStatus: document.getElementById("sheetStatus"),
   scanStatus: document.getElementById("scanStatus"),
   viewer: document.getElementById("viewer"),
   viewerTitle: document.getElementById("viewerTitle"),
@@ -987,7 +988,8 @@ function sheetCanvas(bitmap, target) {
 // the sheet can be read from the scanner or straight from the main screen
 function sheetStatus(text) {
   if (els.scanner.open) els.scanStatus.textContent = text;
-  else els.status.textContent = text;
+  els.sheetStatus.hidden = false;
+  els.sheetStatus.textContent = text;
 }
 
 async function readSheet(file) {
@@ -1013,6 +1015,7 @@ async function readSheet(file) {
       return;
     }
     closeScanner();
+    els.sheetStatus.hidden = true;
     sharedList = found;
     sharedName = "Dispoziție";
     sharedKind = "scanată";
