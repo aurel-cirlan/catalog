@@ -65,8 +65,8 @@ def main() -> None:
                 {"page": page, "heading": False}
             ]
             for hit in hits:
+                hit["title"] = titles.get(page, "")
                 if hit not in article["hits"]:
-                    hit["title"] = titles.get(page, "")
                     article["hits"].append(hit)
 
     # codes drawn on a page but missing from the printed register
