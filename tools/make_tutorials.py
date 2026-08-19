@@ -115,11 +115,37 @@ def worklist(rec: Recorder, url: str) -> None:
     rec.shot(hold=12)
 
 
+def sending(rec: Recorder, url: str) -> None:
+    fresh(rec.page, url)
+    # the share sheet cannot be recorded, so the tap itself is enough
+    rec.page.evaluate(
+        "navigator.share = () => Promise.resolve(); window.open = () => null"
+    )
+    for code in ("7093", "7081"):
+        rec.page.fill("#query", code)
+        rec.page.wait_for_timeout(300)
+        rec.page.click("#results li:first-child .listToggle")
+        rec.shot()
+    rec.page.fill("#query", "")
+    rec.page.wait_for_timeout(300)
+    rec.shot(hold=10)
+    rec.page.click("#worklistSend")
+    rec.shot(hold=8)
+    rec.page.goto(f"{url}?lista=7093,7081")
+    rec.page.wait_for_selector("#sharedTitle")
+    rec.page.wait_for_timeout(700)
+    rec.shot(hold=12)
+    rec.page.click("#sharedSave")
+    rec.page.wait_for_timeout(500)
+    rec.shot(hold=12)
+
+
 TUTORIALS = {
     "cod": by_code,
     "denumire": by_name,
     "categorii": by_section,
     "lista": worklist,
+    "trimite": sending,
 }
 
 

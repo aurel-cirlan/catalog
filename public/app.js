@@ -478,6 +478,11 @@ const TUTORIALS = [
     name: "Listă și note",
     text: "În pagina articolului: ＋ Listă îl adaugă la lista de lucru, iar nota proprie rămâne pe telefonul tău.",
   },
+  {
+    file: "trimite.gif",
+    name: "Trimite lista",
+    text: "Adaugi articolele cu ＋, apeși „trimite” și alegi WhatsApp. Cine deschide linkul vede „Listă primită” cu desenele și o poate salva la el cu „salvează la mine”.",
+  },
 ];
 
 function showTutorial(index) {
