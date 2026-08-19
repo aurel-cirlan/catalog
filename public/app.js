@@ -27,6 +27,10 @@ const els = {
   history: document.getElementById("history"),
   historyList: document.getElementById("historyList"),
   historyClear: document.getElementById("historyClear"),
+  shared: document.getElementById("shared"),
+  sharedTitle: document.getElementById("sharedTitle"),
+  sharedSave: document.getElementById("sharedSave"),
+  sharedClose: document.getElementById("sharedClose"),
   recent: document.getElementById("recent"),
   recentList: document.getElementById("recentList"),
   worklist: document.getElementById("worklist"),
@@ -101,6 +105,7 @@ let history = JSON.parse(localStorage.getItem(HISTORY_KEY) || "[]");
 const notes = JSON.parse(localStorage.getItem(NOTES_KEY) || "{}");
 let worklist = JSON.parse(localStorage.getItem(WORKLIST_KEY) || "[]");
 let lastOpened = localStorage.getItem(LAST_KEY) || "";
+let sharedList = [];
 
 function saveNotes() {
   localStorage.setItem(NOTES_KEY, JSON.stringify(notes));
@@ -348,12 +353,31 @@ function renderSections() {
   }
 }
 
+// a list someone sent on WhatsApp, opened straight from the link
+function renderShared() {
+  const found = sharedList.map(hitByCode).filter(Boolean);
+  els.shared.hidden = false;
+  els.sharedTitle.textContent = `List\u0103 primit\u0103 (${found.length})`;
+  els.recent.hidden = true;
+  els.favourites.hidden = true;
+  els.history.hidden = true;
+  els.depths.hidden = true;
+  els.sections.hidden = true;
+  els.status.textContent = `Ai primit ${found.length} articole`;
+  els.results.append(...found.map(resultCard));
+}
+
 function render(term) {
   els.results.replaceChildren();
+  els.shared.hidden = true;
   if (!term.trim()) {
     renderDepths();
     renderSections();
     renderWorklist();
+    if (sharedList.length) {
+      renderShared();
+      return;
+    }
     if (activeSection) {
       const matches = sectionHits(activeSection);
       els.recent.hidden = true;
@@ -491,7 +515,7 @@ function renderWorklist() {
 }
 
 function worklistText() {
-  const link = `${location.origin}${location.pathname}`;
+  const link = `${location.origin}${location.pathname}#lista=${worklist.join(",")}`;
   const lines = worklist.map((code) => {
     const hit = hitByCode(code);
     const name = hit ? label(hit) : "";
@@ -901,6 +925,13 @@ els.addList.addEventListener("click", () => {
   renderWorklist();
 });
 els.worklistSend.addEventListener("click", sendWorklist);
+els.sharedSave.addEventListener("click", () => {
+  const known = sharedList.filter(hitByCode);
+  worklist = [...new Set([...worklist, ...known])];
+  saveWorklist();
+  closeShared();
+});
+els.sharedClose.addEventListener("click", closeShared);
 els.worklistClear.addEventListener("click", () => {
   worklist = [];
   saveWorklist();
@@ -1003,6 +1034,12 @@ async function loadBackup(file) {
   }
 }
 
+function closeShared() {
+  sharedList = [];
+  window.history.replaceState(null, "", location.pathname + location.search);
+  render("");
+}
+
 async function boot() {
   try {
     const response = await fetch("data/index.json");
@@ -1010,7 +1047,15 @@ async function boot() {
     const index = await response.json();
     hits = flatten(index);
     sections = index.sections || [];
-    const shared = location.hash.replace("#", "").trim();
+    const hash = decodeURIComponent(location.hash.replace("#", "")).trim();
+    const shared = hash.startsWith("lista=") ? "" : hash;
+    if (!shared && hash) {
+      sharedList = hash
+        .slice(6)
+        .split(",")
+        .map((code) => code.trim())
+        .filter((code) => /^\d+$/.test(code));
+    }
     els.query.value = shared;
     render(shared);
     if (!localStorage.getItem(GUIDE_KEY)) els.guide.showModal();
