@@ -34,6 +34,7 @@ const els = {
   stage: document.getElementById("stage"),
   pageImage: document.getElementById("pageImage"),
   marker: document.getElementById("marker"),
+  watermark: document.querySelector(".watermark"),
   close: document.getElementById("close"),
   favourite: document.getElementById("favourite"),
   zoomIn: document.getElementById("zoomIn"),
@@ -580,6 +581,8 @@ async function boot() {
     els.status.textContent = `Catalogul nu a putut fi încărcat: ${error.message}`;
   }
 }
+
+els.watermark.textContent = new Array(400).fill("aurelcirlan.ro").join(" ");
 
 applyTheme(localStorage.getItem(THEME_KEY) || "dark");
 
