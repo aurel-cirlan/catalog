@@ -1,5 +1,9 @@
 const FAVOURITES_KEY = "catalog.favourites";
+const HISTORY_KEY = "catalog.history";
+const THEME_KEY = "catalog.theme";
 const MAX_RESULTS = 60;
+const MAX_HISTORY = 8;
+const CODE_RE = /\d{4}/g;
 
 const els = {
   query: document.getElementById("query"),
@@ -8,6 +12,16 @@ const els = {
   results: document.getElementById("results"),
   favourites: document.getElementById("favourites"),
   favouriteList: document.getElementById("favouriteList"),
+  history: document.getElementById("history"),
+  historyList: document.getElementById("historyList"),
+  theme: document.getElementById("theme"),
+  share: document.getElementById("share"),
+  scan: document.getElementById("scan"),
+  scanner: document.getElementById("scanner"),
+  scanVideo: document.getElementById("scanVideo"),
+  scanShot: document.getElementById("scanShot"),
+  scanClose: document.getElementById("scanClose"),
+  scanStatus: document.getElementById("scanStatus"),
   viewer: document.getElementById("viewer"),
   viewerTitle: document.getElementById("viewerTitle"),
   stage: document.getElementById("stage"),
@@ -28,9 +42,26 @@ let naturalWidth = 0;
 const favourites = new Set(
   JSON.parse(localStorage.getItem(FAVOURITES_KEY) || "[]"),
 );
+let history = JSON.parse(localStorage.getItem(HISTORY_KEY) || "[]");
 
 function saveFavourites() {
   localStorage.setItem(FAVOURITES_KEY, JSON.stringify([...favourites]));
+}
+
+function remember(term) {
+  const clean = term.trim();
+  if (!clean) return;
+  history = [clean, ...history.filter((item) => item !== clean)].slice(
+    0,
+    MAX_HISTORY,
+  );
+  localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+}
+
+function applyTheme(theme) {
+  document.documentElement.dataset.theme = theme;
+  els.theme.textContent = theme === "light" ? "\u263e" : "\u2600";
+  localStorage.setItem(THEME_KEY, theme);
 }
 
 function normalise(text) {
@@ -118,7 +149,10 @@ function resultCard(hit) {
   page.textContent = `p. ${hit.page}`;
 
   button.append(text, page);
-  button.addEventListener("click", () => open(hit));
+  button.addEventListener("click", () => {
+    remember(els.query.value);
+    open(hit);
+  });
   item.append(button);
   return item;
 }
@@ -128,9 +162,11 @@ function render(term) {
   if (!term.trim()) {
     els.status.textContent = `${hits.length} poziții indexate · caută cod sau denumire`;
     renderFavourites();
+    renderHistory();
     return;
   }
   els.favourites.hidden = true;
+  els.history.hidden = true;
   const matches = search(term);
   if (!matches.length) {
     const empty = document.createElement("li");
@@ -157,6 +193,48 @@ function renderFavourites() {
     chip.addEventListener("click", () => open(hit));
     els.favouriteList.append(chip);
   }
+}
+
+function renderHistory() {
+  els.history.hidden = history.length === 0;
+  els.historyList.replaceChildren();
+  for (const term of history) {
+    const chip = document.createElement("button");
+    chip.type = "button";
+    chip.textContent = term;
+    chip.addEventListener("click", () => {
+      els.query.value = term;
+      render(term);
+    });
+    els.historyList.append(chip);
+  }
+}
+
+async function shareCurrent() {
+  if (!current) return;
+  const link = `${location.origin}${location.pathname}#${current.code}`;
+  const name = label(current);
+  const text = `Articol ${current.code}${name ? ` · ${name}` : ""} · pagina ${
+    current.page
+  }\n${link}`;
+  try {
+    let files = [];
+    if (current.thumb) {
+      const blob = await (await fetch(`data/thumbs/${current.thumb}`)).blob();
+      files = [new File([blob], `${current.code}.webp`, { type: blob.type })];
+    }
+    if (files.length && navigator.canShare?.({ files })) {
+      await navigator.share({ files, text });
+      return;
+    }
+    if (navigator.share) {
+      await navigator.share({ text });
+      return;
+    }
+  } catch (error) {
+    if (error.name === "AbortError") return;
+  }
+  window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
 }
 
 function applyZoom() {
@@ -213,6 +291,110 @@ function fitPage() {
   els.stage.scrollTo({ left: 0, top: 0 });
 }
 
+let recogniser = null;
+let stream = null;
+
+function loadScript(src) {
+  return new Promise((resolve, reject) => {
+    const tag = document.createElement("script");
+    tag.src = src;
+    tag.onload = resolve;
+    tag.onerror = () => reject(new Error("script indisponibil"));
+    document.head.append(tag);
+  });
+}
+
+async function getRecogniser() {
+  if (recogniser) return recogniser;
+  if (!window.Tesseract) await loadScript("vendor/tesseract/tesseract.min.js");
+  recogniser = await window.Tesseract.createWorker("eng", 1, {
+    workerPath: new URL("vendor/tesseract/worker.min.js", location.href).href,
+    corePath: new URL("vendor/tesseract/", location.href).href,
+    langPath: new URL("vendor/tessdata", location.href).href,
+    gzip: true,
+  });
+  await recogniser.setParameters({
+    tessedit_char_whitelist: "0123456789",
+    tessedit_pageseg_mode: "11",
+  });
+  return recogniser;
+}
+
+function shot() {
+  const video = els.scanVideo;
+  const scale = Math.min(1600 / video.videoWidth, 2);
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.round(video.videoWidth * scale);
+  canvas.height = Math.round(video.videoHeight * scale);
+  const context = canvas.getContext("2d");
+  context.filter = "grayscale(1) contrast(1.6)";
+  context.drawImage(video, 0, 0, canvas.width, canvas.height);
+  return canvas;
+}
+
+// the code the user aimed at: the known one that is big and near the middle
+function centredCode(words, canvas) {
+  const middle = { x: canvas.width / 2, y: canvas.height / 2 };
+  const found = words
+    .map((word) => ({
+      code: (word.text.match(CODE_RE) || [])[0],
+      distance: Math.hypot(
+        (word.bbox.x0 + word.bbox.x1) / 2 - middle.x,
+        (word.bbox.y0 + word.bbox.y1) / 2 - middle.y,
+      ),
+      height: word.bbox.y1 - word.bbox.y0,
+    }))
+    .filter((word) => word.code && hits.some((hit) => hit.code === word.code))
+    .sort((a, b) => a.distance / a.height - b.distance / b.height);
+  return found.length ? found[0].code : null;
+}
+
+async function openScanner() {
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: { ideal: "environment" } },
+    });
+  } catch {
+    els.status.textContent = "Camera nu este disponibilă";
+    return;
+  }
+  els.scanStatus.textContent = "Ține codul în mijloc";
+  els.scanVideo.srcObject = stream;
+  await els.scanVideo.play();
+  els.scanner.showModal();
+}
+
+function closeScanner() {
+  if (stream) stream.getTracks().forEach((track) => track.stop());
+  stream = null;
+  els.scanVideo.srcObject = null;
+  if (els.scanner.open) els.scanner.close();
+}
+
+async function readCode() {
+  if (!els.scanVideo.videoWidth) return;
+  els.scanShot.disabled = true;
+  els.scanStatus.textContent = "Se citește…";
+  try {
+    const worker = await getRecogniser();
+    const canvas = shot();
+    const result = await worker.recognize(canvas);
+    const found = centredCode(result.data.words || [], canvas);
+    if (!found) {
+      els.scanStatus.textContent = "Nu am găsit niciun cod, mai încearcă";
+      return;
+    }
+    closeScanner();
+    els.query.value = found;
+    remember(found);
+    render(found);
+  } catch {
+    els.scanStatus.textContent = "Scanarea nu a putut porni";
+  } finally {
+    els.scanShot.disabled = false;
+  }
+}
+
 els.query.addEventListener("input", () => render(els.query.value));
 els.clear.addEventListener("click", () => {
   els.query.value = "";
@@ -231,6 +413,16 @@ els.zoomOut.addEventListener("click", () => {
   scrollToMarker();
 });
 els.fit.addEventListener("click", fitPage);
+els.share.addEventListener("click", shareCurrent);
+els.theme.addEventListener("click", () =>
+  applyTheme(
+    document.documentElement.dataset.theme === "light" ? "dark" : "light",
+  ),
+);
+els.scan.addEventListener("click", openScanner);
+els.scanShot.addEventListener("click", readCode);
+els.scanClose.addEventListener("click", closeScanner);
+els.scanner.addEventListener("close", closeScanner);
 els.favourite.addEventListener("click", () => {
   if (!current) return;
   const key = keyOf(current);
@@ -246,12 +438,16 @@ async function boot() {
     const response = await fetch("data/index.json");
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     hits = flatten(await response.json());
-    render("");
-    els.query.focus();
+    const shared = location.hash.replace("#", "").trim();
+    els.query.value = shared;
+    render(shared);
+    if (!shared) els.query.focus();
   } catch (error) {
     els.status.textContent = `Catalogul nu a putut fi încărcat: ${error.message}`;
   }
 }
+
+applyTheme(localStorage.getItem(THEME_KEY) || "dark");
 
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("sw.js").catch(() => {});

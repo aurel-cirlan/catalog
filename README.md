@@ -15,6 +15,13 @@ Codurile articolelor din catalog sunt desenate ca imagini, nu ca text, deci
    (`tools/segment.py`) și îl salvează în `public/data/thumbs`;
 4. scrie `public/data/index.json` cu toate codurile, paginile și pozițiile.
 
+## Scanarea cu camera
+
+Butonul cu camera din bara de căutare face OCR direct pe telefon, cu
+tesseract.js din `public/vendor` (motor + limba engleză servite local, ca să
+meargă și offline). Din cuvintele recunoscute se alege codul cunoscut care e
+mare și aproape de centrul imaginii.
+
 ## Regenerarea indexului
 
 Necesar: `tesseract-ocr`, `poppler-utils`, Python cu `pymupdf`, `pillow`,

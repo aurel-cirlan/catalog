@@ -26,6 +26,10 @@
           aria-label="Caută cod articol"
         />
         <button id="clear" type="button" aria-label="Șterge">×</button>
+        <button id="scan" type="button" aria-label="Scanează cu camera">
+          📷
+        </button>
+        <button id="theme" type="button" aria-label="Schimbă tema">☀</button>
       </div>
       <p id="status" class="status">Se încarcă catalogul…</p>
     </header>
@@ -34,6 +38,10 @@
       <section id="favourites" class="chips" hidden>
         <h2>Favorite</h2>
         <div id="favouriteList" class="chipRow"></div>
+      </section>
+      <section id="history" class="chips" hidden>
+        <h2>Căutări recente</h2>
+        <div id="historyList" class="chipRow"></div>
       </section>
       <ul id="results" class="results"></ul>
     </main>
@@ -49,6 +57,7 @@
       <div class="viewerBar">
         <button id="close" type="button">Înapoi</button>
         <span id="viewerTitle"></span>
+        <button id="share" type="button" aria-label="Trimite">⤴</button>
         <button id="favourite" type="button" aria-label="Favorit">☆</button>
       </div>
       <div id="stage" class="stage">
@@ -61,6 +70,20 @@
         <button id="zoomOut" type="button">−</button>
         <button id="fit" type="button">Toată pagina</button>
         <button id="zoomIn" type="button">+</button>
+      </div>
+    </dialog>
+
+    <dialog id="scanner" class="scanner">
+      <div class="viewerBar">
+        <button id="scanClose" type="button">Înapoi</button>
+        <span id="scanStatus">Ține codul în mijloc</span>
+      </div>
+      <div class="scanStage">
+        <video id="scanVideo" playsinline muted></video>
+        <div class="scanFrame"></div>
+      </div>
+      <div class="viewerBar">
+        <button id="scanShot" type="button" class="primary">Citește codul</button>
       </div>
     </dialog>
 
