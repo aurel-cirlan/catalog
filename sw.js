@@ -1,4 +1,10 @@
-const CACHE = "catalog-v8";
+/*!
+ * Catalog GEALAN - cautare rapida articole
+ * Copyright (c) 2026 Aurel Cirlan - https://aurelcirlan.ro
+ * Toate drepturile rezervate. Copierea, modificarea sau redistribuirea
+ * acestui cod fara acordul scris al autorului este interzisa.
+ */
+const CACHE = "catalog-v9";
 const SHELL = [
   "./",
   "./index.html",
