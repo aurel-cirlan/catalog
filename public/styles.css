@@ -398,11 +398,28 @@ body {
   padding: 12px;
 }
 
-.guide button.ghost {
+.guide button.ghost,
+.guide a.ghost {
   background: var(--raised);
   color: var(--text);
   border: 1px solid var(--line);
   margin-bottom: 8px;
+}
+
+.guide a.ghost {
+  display: block;
+  border-radius: 12px;
+  padding: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  text-align: center;
+  text-decoration: none;
+}
+
+.guide p {
+  margin: 0 0 12px;
+  color: var(--muted);
+  font-size: 15px;
 }
 
 .tutList {
