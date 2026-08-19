@@ -103,6 +103,8 @@ const els = {
 
 let hits = [];
 let sections = [];
+// articles that were dropped from the current edition, kept so old codes still work
+const OLD_LABEL = "catalog vechi";
 let activeGroup = null;
 let activeDepth = null;
 let activeSection = null;
@@ -186,7 +188,7 @@ function pageSections(index) {
   return map;
 }
 
-function flatten(index) {
+function flatten(index, old = false) {
   const bySection = pageSections(index);
   const flat = [];
   for (const article of index.articles) {
@@ -195,14 +197,30 @@ function flatten(index) {
         code: article.code,
         name: article.name,
         ro: article.ro,
+        old,
         haystack: normalise(
-          `${article.name} ${article.ro} ${bySection.get(hit.page) || ""}`,
+          `${article.name} ${article.ro} ${bySection.get(hit.page) || ""} ${
+            old ? OLD_LABEL : ""
+          }`,
         ),
         ...hit,
       });
     }
   }
   return flat;
+}
+
+// articles kept from the previous catalog edition live in data/old
+function assets(hit) {
+  return hit.old ? "data/old/" : "data/";
+}
+
+function thumbUrl(hit) {
+  return `${assets(hit)}thumbs/${hit.thumb}`;
+}
+
+function pageUrl(hit) {
+  return `${assets(hit)}pages/${String(hit.page).padStart(3, "0")}.webp`;
 }
 
 function search(term) {
@@ -219,6 +237,8 @@ function search(term) {
   });
   return matches
     .sort((a, b) => {
+      const fresh = Number(Boolean(a.old)) - Number(Boolean(b.old));
+      if (fresh) return fresh;
       const exact = Number(b.code === digits) - Number(a.code === digits);
       const starts =
         Number(b.code.startsWith(digits)) - Number(a.code.startsWith(digits));
@@ -234,12 +254,13 @@ function search(term) {
 }
 
 function keyOf(hit) {
-  return `${hit.code}|${hit.page}`;
+  return `${hit.code}|${hit.page}${hit.old ? "|v" : ""}`;
 }
 
 function label(hit) {
   const parts = [hit.ro, hit.name].filter(Boolean);
-  return parts.length ? parts.join(" · ") : hit.title || "";
+  const text = parts.length ? parts.join(" · ") : hit.title || "";
+  return hit.old ? `${text}${text ? " · " : ""}${OLD_LABEL}` : text;
 }
 
 function resultCard(hit) {
@@ -250,7 +271,7 @@ function resultCard(hit) {
 
   if (hit.thumb) {
     const img = document.createElement("img");
-    img.src = `data/thumbs/${hit.thumb}`;
+    img.src = thumbUrl(hit);
     img.alt = `Articol ${hit.code}`;
     img.loading = "lazy";
     button.append(img);
@@ -318,7 +339,7 @@ function sectionHits(section) {
   const pages = new Set(section.pages);
   const seen = new Set();
   return hits
-    .filter((hit) => pages.has(hit.page) && hit.heading)
+    .filter((hit) => !hit.old && pages.has(hit.page) && hit.heading)
     .filter((hit) => !seen.has(hit.code) && seen.add(hit.code))
     .sort((a, b) => a.page - b.page || a.code.localeCompare(b.code))
     .slice(0, MAX_SECTION_RESULTS);
@@ -603,7 +624,7 @@ function renderCompare() {
     pane.className = "comparePane";
     if (hit.thumb) {
       const img = document.createElement("img");
-      img.src = `data/thumbs/${hit.thumb}`;
+      img.src = thumbUrl(hit);
       img.alt = `Articol ${hit.code}`;
       pane.append(img);
     }
@@ -654,7 +675,10 @@ function renderNeighbours(hit) {
   const seen = new Set([hit.code]);
   const others = hits.filter(
     (item) =>
-      item.page === hit.page && !seen.has(item.code) && seen.add(item.code),
+      item.page === hit.page &&
+      Boolean(item.old) === Boolean(hit.old) &&
+      !seen.has(item.code) &&
+      seen.add(item.code),
   );
   els.neighbours.hidden = others.length === 0;
   els.neighbours.replaceChildren();
@@ -677,15 +701,10 @@ async function shareCurrent(withPage) {
   }\n${link}`;
   try {
     const sources = withPage
-      ? [
-          [
-            `data/pages/${String(current.page).padStart(3, "0")}.webp`,
-            `pagina-${current.page}.webp`,
-          ],
-        ]
+      ? [[pageUrl(current), `pagina-${current.page}.webp`]]
       : [];
     if (current.thumb) {
-      sources.unshift([`data/thumbs/${current.thumb}`, `${current.code}.webp`]);
+      sources.unshift([thumbUrl(current), `${current.code}.webp`]);
     }
     const files = await Promise.all(
       sources.map(async ([url, name]) => {
@@ -743,11 +762,13 @@ function open(hit) {
   current = hit;
   lastOpened = hit.code;
   localStorage.setItem(LAST_KEY, lastOpened);
-  els.viewerTitle.textContent = `${hit.code} · pagina ${hit.page}`;
+  els.viewerTitle.textContent = `${hit.code} · pagina ${hit.page}${
+    hit.old ? ` · ${OLD_LABEL}` : ""
+  }`;
   els.favourite.textContent = favourites.has(keyOf(hit)) ? "★" : "☆";
   els.note.value = notes[hit.code] || "";
   updateListButton();
-  els.pageImage.src = `data/pages/${String(hit.page).padStart(3, "0")}.webp`;
+  els.pageImage.src = pageUrl(hit);
   els.pageImage.alt = `Pagina ${hit.page}`;
   renderNeighbours(hit);
   if (!els.viewer.open) els.viewer.showModal();
@@ -1176,6 +1197,17 @@ function listFromLink(hash) {
     .filter((code) => /^\d+$/.test(code));
 }
 
+// the articles that disappeared from the current edition, if the archive exists
+async function oldHits() {
+  try {
+    const response = await fetch("data/old/index.json");
+    if (!response.ok) return [];
+    return flatten(await response.json(), true);
+  } catch (error) {
+    return [];
+  }
+}
+
 async function boot() {
   try {
     const response = await fetch("data/index.json");
@@ -1183,6 +1215,8 @@ async function boot() {
     const index = await response.json();
     hits = flatten(index);
     sections = index.sections || [];
+    hits = hits.concat(await oldHits());
+
     const hash = decodeURIComponent(location.hash.replace("#", "")).trim();
     sharedList = listFromLink(hash);
     sharedName = (
