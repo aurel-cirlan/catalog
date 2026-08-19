@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="ro">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#111418" />
+    <title>Căutare catalog</title>
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="icon" href="icons/icon-192.png" />
+    <link rel="apple-touch-icon" href="icons/icon-192.png" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="bar">
+      <div class="search">
+        <input
+          id="query"
+          type="search"
+          inputmode="numeric"
+          autocomplete="off"
+          enterkeyhint="search"
+          placeholder="Cod articol, ex. 7093"
+          aria-label="Caută cod articol"
+        />
+        <button id="clear" type="button" aria-label="Șterge">×</button>
+      </div>
+      <p id="status" class="status">Se încarcă catalogul…</p>
+    </header>
+
+    <main>
+      <section id="favourites" class="chips" hidden>
+        <h2>Favorite</h2>
+        <div id="favouriteList" class="chipRow"></div>
+      </section>
+      <ul id="results" class="results"></ul>
+    </main>
+
+    <dialog id="viewer" class="viewer">
+      <div class="viewerBar">
+        <button id="close" type="button">Înapoi</button>
+        <span id="viewerTitle"></span>
+        <button id="favourite" type="button" aria-label="Favorit">☆</button>
+      </div>
+      <div id="stage" class="stage">
+        <div id="canvas" class="canvas">
+          <img id="pageImage" alt="" />
+          <div id="marker" class="marker"></div>
+        </div>
+      </div>
+      <div class="viewerBar">
+        <button id="zoomOut" type="button">−</button>
+        <button id="fit" type="button">Toată pagina</button>
+        <button id="zoomIn" type="button">+</button>
+      </div>
+    </dialog>
+
+    <script src="app.js" type="module"></script>
+  </body>
+</html>
