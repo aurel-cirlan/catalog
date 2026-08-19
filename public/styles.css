@@ -125,9 +125,15 @@ body {
     border-color 0.15s ease;
 }
 
-.chipRow button:active {
+.chipRow button:active,
+.chipRow button.on {
   background: var(--accent-soft);
   border-color: var(--accent);
+}
+
+.chipRow button.on {
+  color: var(--accent);
+  font-weight: 600;
 }
 
 [hidden] {

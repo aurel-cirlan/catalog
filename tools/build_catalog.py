@@ -14,6 +14,11 @@ import register
 GLOSSARY = json.loads(
     (Path(__file__).with_name("glossary_ro.json")).read_text(encoding="utf-8")
 )
+SECTIONS_RO = json.loads(
+    (Path(__file__).with_name("sections_ro.json")).read_text(encoding="utf-8")
+)
+# the register pages at the back belong to no profile system
+SKIP_SECTIONS = {"Legende", "Inhalt"}
 
 
 def hits_for(ocr_by_page: dict[int, list[dict]], code: str, page: int) -> list[dict]:
@@ -33,6 +38,35 @@ def hits_for(ocr_by_page: dict[int, list[dict]], code: str, page: int) -> list[d
         }
         for entry in found
     ]
+
+
+def heading(page: pymupdf.Page) -> str:
+    """The section title printed at the top of a catalog page."""
+    spans = [
+        span
+        for block in page.get_text("dict")["blocks"]
+        if block["type"] == 0
+        for line in block["lines"]
+        for span in line["spans"]
+        if span["size"] > 13 and 20 < span["bbox"][1] < 50
+    ]
+    spans.sort(key=lambda span: (span["bbox"][1], span["bbox"][0]))
+    title = " ".join(span["text"] for span in spans).split("·")[0]
+    return " ".join(title.split())
+
+
+def sections(doc: pymupdf.Document) -> list[dict]:
+    """Profile systems and product groups, with the pages each one covers."""
+    found: dict[str, dict] = {}
+    for number, page in enumerate(doc, 1):
+        name = heading(page)
+        if not name or name in SKIP_SECTIONS:
+            continue
+        section = found.setdefault(
+            name, {"name": name, "ro": SECTIONS_RO.get(name, name), "pages": []}
+        )
+        section["pages"].append(number)
+    return list(found.values())
 
 
 def main() -> None:
@@ -83,6 +117,7 @@ def main() -> None:
 
     index = {
         "pageCount": ocr["pageCount"],
+        "sections": sections(doc),
         "articles": sorted(articles.values(), key=lambda a: a["code"]),
     }
     (args.data / "index.json").write_text(json.dumps(index), encoding="utf-8")
