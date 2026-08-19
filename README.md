@@ -29,6 +29,16 @@ Necesar: `tesseract-ocr`, `poppler-utils`, Python cu `pymupdf`, `pillow`,
 
 ```bash
 python3 tools/build_index.py catalog.pdf --out public/data
+python3 tools/build_catalog.py catalog.pdf --data public/data
+```
+
+## Ediția anterioară a catalogului
+
+Articolele care nu mai apar în catalogul curent rămân disponibile la căutare,
+marcate „catalog vechi". Se copiază din datele ediției vechi cu:
+
+```bash
+python3 tools/archive_old.py /cale/catre/data-vechi --data public/data
 ```
 
 ## Rulare locală

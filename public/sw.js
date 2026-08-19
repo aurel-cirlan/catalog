@@ -4,7 +4,7 @@
  * Toate drepturile rezervate. Copierea, modificarea sau redistribuirea
  * acestui cod fara acordul scris al autorului este interzisa.
  */
-const CACHE = "catalog-v24";
+const CACHE = "catalog-v25";
 const SHELL = [
   "./",
   "./index.html",
@@ -13,6 +13,7 @@ const SHELL = [
   "./app.js",
   "./manifest.webmanifest",
   "./data/index.json",
+  "./data/old/index.json",
 ];
 
 // the shell changes with every release, the catalog assets never do
