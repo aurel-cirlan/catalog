@@ -1,3 +1,9 @@
+/*!
+ * Catalog GEALAN - cautare rapida articole
+ * Copyright (c) 2026 Aurel Cirlan - https://aurelcirlan.ro
+ * Toate drepturile rezervate. Copierea, modificarea sau redistribuirea
+ * acestui cod fara acordul scris al autorului este interzisa.
+ */
 const FAVOURITES_KEY = "catalog.favourites";
 const HISTORY_KEY = "catalog.history";
 const THEME_KEY = "catalog.theme";
