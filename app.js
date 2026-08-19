@@ -62,6 +62,8 @@ const els = {
   scanShot: document.getElementById("scanShot"),
   scanClose: document.getElementById("scanClose"),
   scanTorch: document.getElementById("scanTorch"),
+  scanSheet: document.getElementById("scanSheet"),
+  sheetFile: document.getElementById("sheetFile"),
   scanStatus: document.getElementById("scanStatus"),
   viewer: document.getElementById("viewer"),
   viewerTitle: document.getElementById("viewerTitle"),
@@ -128,6 +130,7 @@ let lastOpened = localStorage.getItem(LAST_KEY) || "";
 let zoomMode = localStorage.getItem(ZOOM_KEY) || "page";
 let sharedList = [];
 let sharedName = "";
+let sharedKind = "";
 
 function saveNotes() {
   localStorage.setItem(NOTES_KEY, JSON.stringify(notes));
@@ -409,16 +412,20 @@ function renderSections() {
 // a list someone sent on WhatsApp, opened straight from the link
 function renderShared() {
   const found = sharedList.map(hitByCode).filter(Boolean);
+  const kind = sharedKind || "primit\u0103";
   els.shared.hidden = false;
   els.sharedTitle.textContent = sharedName
-    ? `${sharedName} · primit\u0103 (${found.length})`
-    : `List\u0103 primit\u0103 (${found.length})`;
+    ? `${sharedName} · ${kind} (${found.length})`
+    : `List\u0103 ${kind} (${found.length})`;
   els.recent.hidden = true;
   els.favourites.hidden = true;
   els.history.hidden = true;
   els.depths.hidden = true;
   els.sections.hidden = true;
-  els.status.textContent = `Ai primit ${found.length} articole`;
+  els.status.textContent =
+    sharedKind === "scanat\u0103"
+      ? `Am g\u0103sit ${found.length} articole pe dispozi\u021bie \u2014 verific\u0103 lista`
+      : `Ai primit ${found.length} articole`;
   els.results.append(...found.map(resultCard));
 }
 
@@ -883,7 +890,12 @@ async function openScanner() {
       },
     });
   } catch {
-    els.status.textContent = "Camera nu este disponibilă";
+    // without a camera the sheet can still be read from a photo
+    stream = null;
+    els.scanStatus.textContent =
+      "Camera nu este disponibilă — folosește 📄 Dispoziție";
+    els.scanTorch.hidden = true;
+    els.scanner.showModal();
     return;
   }
   torchOn = false;
@@ -938,9 +950,74 @@ async function readFrame(round) {
   };
 }
 
+// article numbers on a picking list: six digits, sometimes one letter after
+const SHEET_CODE_RE = /^\d{6}[A-Z]?$/;
+// the codes sit in the left column; quantities and stock live further right
+const SHEET_COLUMN = 0.45;
+const SHEET_CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ.,-/";
+// two readings of the same photo, small and large, catch different lines
+const SHEET_PASSES = [
+  { width: 1900, mode: "6" },
+  { width: 2800, mode: "11" },
+];
+
+// the first four digits of an article number are the catalog code
+function sheetCodes(words, width, found) {
+  for (const word of words) {
+    const text = word.text.trim();
+    if (!SHEET_CODE_RE.test(text)) continue;
+    if (word.bbox.x0 / width > SHEET_COLUMN) continue;
+    const code = text.slice(0, 4);
+    if (hitByCode(code) && !found.includes(code)) found.push(code);
+  }
+}
+
+function sheetCanvas(bitmap, target) {
+  const scale = target / bitmap.width;
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.round(bitmap.width * scale);
+  canvas.height = Math.round(bitmap.height * scale);
+  const context = canvas.getContext("2d");
+  context.filter = "grayscale(1) contrast(1.6)";
+  context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+  return canvas;
+}
+
+async function readSheet(file) {
+  scanning = false;
+  els.scanStatus.textContent = "Citesc dispoziția… durează ~30 de secunde";
+  try {
+    const bitmap = await createImageBitmap(file);
+    const worker = await getRecogniser();
+    await worker.setParameters({ tessedit_char_whitelist: SHEET_CHARS });
+    const found = [];
+    for (const pass of SHEET_PASSES) {
+      const canvas = sheetCanvas(bitmap, pass.width);
+      await worker.setParameters({ tessedit_pageseg_mode: pass.mode });
+      const result = await worker.recognize(canvas);
+      sheetCodes(result.data.words || [], canvas.width, found);
+      els.scanStatus.textContent = `Am găsit ${found.length} articole…`;
+    }
+    await worker.setParameters({ tessedit_char_whitelist: "0123456789" });
+    if (!found.length) {
+      els.scanStatus.textContent =
+        "Nu am găsit coduri — fotografiază mai de aproape coloana Articol";
+      return;
+    }
+    closeScanner();
+    sharedList = found;
+    sharedName = "Dispoziție";
+    sharedKind = "scanată";
+    els.query.value = "";
+    render("");
+  } catch {
+    els.scanStatus.textContent = "Poza nu a putut fi citită";
+  }
+}
+
 // keeps reading frames until a catalog code shows up, so nothing has to be timed
 async function scanLoop() {
-  if (scanning) return;
+  if (scanning || !stream) return;
   scanning = true;
   for (let round = 0; scanning; round += 1) {
     if (!els.scanVideo.videoWidth) {
@@ -1004,6 +1081,12 @@ els.theme.addEventListener("click", () =>
 els.scan.addEventListener("click", openScanner);
 els.scanShot.addEventListener("click", scanLoop);
 els.scanTorch.addEventListener("click", toggleTorch);
+els.scanSheet.addEventListener("click", () => els.sheetFile.click());
+els.sheetFile.addEventListener("change", () => {
+  const file = els.sheetFile.files?.[0];
+  els.sheetFile.value = "";
+  if (file) readSheet(file);
+});
 els.scanClose.addEventListener("click", closeScanner);
 els.scanner.addEventListener("close", closeScanner);
 els.note.addEventListener("input", () => {
@@ -1182,6 +1265,7 @@ async function loadBackup(file) {
 function closeShared() {
   sharedList = [];
   sharedName = "";
+  sharedKind = "";
   window.history.replaceState(null, "", location.pathname);
   render("");
 }
