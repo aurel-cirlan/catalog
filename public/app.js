@@ -63,6 +63,7 @@ const els = {
   scanClose: document.getElementById("scanClose"),
   scanTorch: document.getElementById("scanTorch"),
   scanSheet: document.getElementById("scanSheet"),
+  sheetScan: document.getElementById("sheetScan"),
   sheetFile: document.getElementById("sheetFile"),
   scanStatus: document.getElementById("scanStatus"),
   viewer: document.getElementById("viewer"),
@@ -983,9 +984,15 @@ function sheetCanvas(bitmap, target) {
   return canvas;
 }
 
+// the sheet can be read from the scanner or straight from the main screen
+function sheetStatus(text) {
+  if (els.scanner.open) els.scanStatus.textContent = text;
+  else els.status.textContent = text;
+}
+
 async function readSheet(file) {
   scanning = false;
-  els.scanStatus.textContent = "Citesc dispoziția… durează ~30 de secunde";
+  sheetStatus("Citesc dispozi\u021bia\u2026 dureaz\u0103 ~30 de secunde");
   try {
     const bitmap = await createImageBitmap(file);
     const worker = await getRecogniser();
@@ -996,12 +1003,13 @@ async function readSheet(file) {
       await worker.setParameters({ tessedit_pageseg_mode: pass.mode });
       const result = await worker.recognize(canvas);
       sheetCodes(result.data.words || [], canvas.width, found);
-      els.scanStatus.textContent = `Am găsit ${found.length} articole…`;
+      sheetStatus(`Am găsit ${found.length} articole…`);
     }
     await worker.setParameters({ tessedit_char_whitelist: "0123456789" });
     if (!found.length) {
-      els.scanStatus.textContent =
-        "Nu am găsit coduri — fotografiază mai de aproape coloana Articol";
+      sheetStatus(
+        "Nu am găsit coduri — fotografiază mai de aproape coloana Articol",
+      );
       return;
     }
     closeScanner();
@@ -1011,7 +1019,7 @@ async function readSheet(file) {
     els.query.value = "";
     render("");
   } catch {
-    els.scanStatus.textContent = "Poza nu a putut fi citită";
+    sheetStatus("Poza nu a putut fi citită");
   }
 }
 
@@ -1082,6 +1090,7 @@ els.scan.addEventListener("click", openScanner);
 els.scanShot.addEventListener("click", scanLoop);
 els.scanTorch.addEventListener("click", toggleTorch);
 els.scanSheet.addEventListener("click", () => els.sheetFile.click());
+els.sheetScan.addEventListener("click", () => els.sheetFile.click());
 els.sheetFile.addEventListener("change", () => {
   const file = els.sheetFile.files?.[0];
   els.sheetFile.value = "";
