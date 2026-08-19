@@ -950,8 +950,8 @@ async function readFrame(round) {
   };
 }
 
-// article numbers on a picking list: six digits, sometimes one letter after
-const SHEET_CODE_RE = /^\d{6}[A-Z]?$/;
+// article numbers on a picking list: six digits, sometimes a letter or digit after
+const SHEET_CODE_RE = /^\d{6}[A-Z0-9]?$/;
 // the codes sit in the left column; quantities and stock live further right
 const SHEET_COLUMN = 0.45;
 const SHEET_CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ.,-/";
