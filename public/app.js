@@ -3,6 +3,7 @@ const HISTORY_KEY = "catalog.history";
 const THEME_KEY = "catalog.theme";
 const MAX_RESULTS = 60;
 const MAX_HISTORY = 8;
+const NEIGHBOUR_LIMIT = 20;
 const CODE_RE = /\d{4}/g;
 
 const els = {
@@ -14,6 +15,8 @@ const els = {
   favouriteList: document.getElementById("favouriteList"),
   history: document.getElementById("history"),
   historyList: document.getElementById("historyList"),
+  historyClear: document.getElementById("historyClear"),
+  neighbours: document.getElementById("neighbours"),
   theme: document.getElementById("theme"),
   share: document.getElementById("share"),
   scan: document.getElementById("scan"),
@@ -211,6 +214,25 @@ function renderHistory() {
   }
 }
 
+// the other articles printed on the same catalog page, usually parts that fit together
+function renderNeighbours(hit) {
+  const seen = new Set([hit.code]);
+  const others = hits.filter(
+    (item) =>
+      item.page === hit.page && !seen.has(item.code) && seen.add(item.code),
+  );
+  els.neighbours.hidden = others.length === 0;
+  els.neighbours.replaceChildren();
+  for (const other of others.slice(0, NEIGHBOUR_LIMIT)) {
+    const chip = document.createElement("button");
+    chip.type = "button";
+    chip.textContent = other.code;
+    chip.title = label(other);
+    chip.addEventListener("click", () => open(other));
+    els.neighbours.append(chip);
+  }
+}
+
 async function shareCurrent() {
   if (!current) return;
   const link = `${location.origin}${location.pathname}#${current.code}`;
@@ -276,6 +298,7 @@ function open(hit) {
   els.favourite.textContent = favourites.has(keyOf(hit)) ? "★" : "☆";
   els.pageImage.src = `data/pages/${String(hit.page).padStart(3, "0")}.webp`;
   els.pageImage.alt = `Pagina ${hit.page}`;
+  renderNeighbours(hit);
   if (!els.viewer.open) els.viewer.showModal();
   els.pageImage.onload = () => {
     naturalWidth = els.pageImage.naturalWidth;
@@ -482,6 +505,11 @@ els.scanShot.addEventListener("click", scanLoop);
 els.scanTorch.addEventListener("click", toggleTorch);
 els.scanClose.addEventListener("click", closeScanner);
 els.scanner.addEventListener("close", closeScanner);
+els.historyClear.addEventListener("click", () => {
+  history = [];
+  localStorage.removeItem(HISTORY_KEY);
+  renderHistory();
+});
 els.favourite.addEventListener("click", () => {
   if (!current) return;
   const key = keyOf(current);
@@ -508,8 +536,19 @@ async function boot() {
 
 applyTheme(localStorage.getItem(THEME_KEY) || "dark");
 
+// a new release takes over on its own, so the phone never shows a stale version
 if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("sw.js").catch(() => {});
+  let reloading = false;
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (reloading) return;
+    reloading = true;
+    location.reload();
+  });
+  navigator.serviceWorker.register("sw.js").then((registration) => {
+    document.addEventListener("visibilitychange", () => {
+      if (!document.hidden) registration.update();
+    });
+  }, () => {});
 }
 
 boot();

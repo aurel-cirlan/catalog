@@ -40,7 +40,10 @@
         <div id="favouriteList" class="chipRow"></div>
       </section>
       <section id="history" class="chips" hidden>
-        <h2>Căutări recente</h2>
+        <h2>
+          Căutări recente
+          <button id="historyClear" type="button" class="link">golește</button>
+        </h2>
         <div id="historyList" class="chipRow"></div>
       </section>
       <ul id="results" class="results"></ul>
@@ -60,6 +63,7 @@
         <button id="share" type="button" aria-label="Trimite">⤴</button>
         <button id="favourite" type="button" aria-label="Favorit">☆</button>
       </div>
+      <div id="neighbours" class="chipRow neighbours" hidden></div>
       <div id="stage" class="stage">
         <div id="canvas" class="canvas">
           <img id="pageImage" alt="" />
