@@ -1215,6 +1215,64 @@ els.favourite.addEventListener("click", () => {
   els.favourite.textContent = favourites.has(key) ? "★" : "☆";
   renderFavourites();
 });
+// Navigare cu tastatură
+let selectedIndex = -1;
+
+document.addEventListener("keydown", (e) => {
+  if (els.viewer.open) {
+    if (e.key === "Escape") {
+      els.viewer.close();
+    }
+    return;
+  }
+
+  if (els.compare.open) {
+    if (e.key === "Escape") {
+      els.compare.close();
+    }
+    return;
+  }
+
+  if (els.guide.open) {
+    if (e.key === "Escape") {
+      els.guide.close();
+    }
+    return;
+  }
+
+  const results = els.results.querySelectorAll("li");
+  if (!results.length) return;
+
+  if (e.key === "ArrowDown") {
+    e.preventDefault();
+    selectedIndex = Math.min(selectedIndex + 1, results.length - 1);
+    updateSelection(results);
+  } else if (e.key === "ArrowUp") {
+    e.preventDefault();
+    selectedIndex = Math.max(selectedIndex - 1, 0);
+    updateSelection(results);
+  } else if (e.key === "Enter" && selectedIndex >= 0) {
+    const card = results[selectedIndex].querySelector(".card");
+    if (card) card.click();
+  }
+});
+
+function updateSelection(results) {
+  results.forEach((li, index) => {
+    const card = li.querySelector(".card");
+    if (index === selectedIndex) {
+      card.style.background = "var(--accent-soft)";
+      card.style.borderColor = "var(--accent)";
+    } else {
+      card.style.background = "";
+      card.style.borderColor = "";
+    }
+  });
+}
+
+els.query.addEventListener("input", () => {
+  selectedIndex = -1;
+});
 
 // a small file the user can send to the new phone, so notes and list survive
 function saveBackup() {
