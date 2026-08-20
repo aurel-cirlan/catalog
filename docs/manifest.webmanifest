@@ -1,6 +1,6 @@
 {
-  "name": "Căutare catalog profile",
-  "short_name": "Catalog",
+  "name": "Căutare catalog GEALAN 2026",
+"short_name": "AC Catalog",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
