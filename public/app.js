@@ -466,6 +466,8 @@ function render(term) {
   els.recent.hidden = true;
   els.favourites.hidden = true;
   els.history.hidden = true;
+  els.depths.hidden = true;
+els.sections.hidden = true;
   const matches = search(term);
   if (!matches.length) {
     const empty = document.createElement("li");
