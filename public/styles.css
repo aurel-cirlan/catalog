@@ -655,3 +655,41 @@ body {
   box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.25);
   pointer-events: none;
 }
+/* Animații subtile */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.results li {
+  animation: fadeIn 0.3s ease-out;
+}
+
+.results li:nth-child(1) { animation-delay: 0s; }
+.results li:nth-child(2) { animation-delay: 0.05s; }
+.results li:nth-child(3) { animation-delay: 0.1s; }
+.results li:nth-child(4) { animation-delay: 0.15s; }
+.results li:nth-child(5) { animation-delay: 0.2s; }
+.results li:nth-child(6) { animation-delay: 0.25s; }
+
+.chipRow button {
+  transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+}
+
+.chipRow button:hover {
+  transform: translateY(-2px);
+}
+
+.card {
+  transition: transform 0.12s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.card:hover {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
