@@ -693,3 +693,18 @@ body {
 .card:hover {
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
 }
+/* Footer lizibil pe orice fundal și în orice temă */
+footer.credit {
+  background: rgba(8, 15, 25, 0.78);
+  color: #e6edf3;
+  padding: 12px 16px;
+  border-radius: 10px;
+  margin: 18px auto 10px;
+  max-width: 720px;
+  backdrop-filter: blur(4px);
+}
+footer.credit small {
+  color: #b9c6d2;
+  display: block;
+  margin-top: 4px;
+}
