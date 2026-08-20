@@ -1333,7 +1333,7 @@ async function boot() {
 
 els.watermark.textContent = new Array(400).fill("aurelcirlan.ro").join(" ");
 
-applyTheme(localStorage.getItem(THEME_KEY) || "dark");
+applyTheme(localStorage.getItem(THEME_KEY) || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
 setZoomMode(zoomMode);
 
 // a new release takes over on its own, so the phone never shows a stale version
