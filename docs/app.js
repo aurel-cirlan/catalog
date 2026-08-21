@@ -1394,6 +1394,33 @@ els.watermark.textContent = new Array(400).fill("aurelcirlan.ro").join(" ");
 applyTheme(localStorage.getItem(THEME_KEY) || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
 setZoomMode(zoomMode);
 
+// a small, self-dismissing banner reporting how the offline download is going
+function offlineToast() {
+  let el = document.getElementById("offlineToast");
+  if (el) return el;
+  el = document.createElement("div");
+  el.id = "offlineToast";
+  el.className = "offlineToast";
+  el.hidden = true;
+  document.body.appendChild(el);
+  return el;
+}
+
+let offlineHideTimer = null;
+function showOfflineToast(text, autoHide) {
+  const el = offlineToast();
+  el.textContent = text;
+  el.hidden = false;
+  requestAnimationFrame(() => el.classList.add("shown"));
+  clearTimeout(offlineHideTimer);
+  if (autoHide) {
+    offlineHideTimer = setTimeout(() => {
+      el.classList.remove("shown");
+      setTimeout(() => (el.hidden = true), 300);
+    }, 2500);
+  }
+}
+
 // a new release takes over on its own, so the phone never shows a stale version
 if ("serviceWorker" in navigator) {
   let reloading = false;
@@ -1401,6 +1428,16 @@ if ("serviceWorker" in navigator) {
     if (reloading) return;
     reloading = true;
     location.reload();
+  });
+  navigator.serviceWorker.addEventListener("message", (event) => {
+    const data = event.data;
+    if (!data || data.type !== "offline-progress") return;
+    if (data.done < data.total) {
+      const percent = Math.round((data.done / data.total) * 100);
+      showOfflineToast(`Se pregătește catalogul pentru offline… ${percent}%`, false);
+    } else {
+      showOfflineToast("Catalog pregătit pentru utilizare offline ✓", true);
+    }
   });
   navigator.serviceWorker.register("sw.js").then(
     (registration) => {
@@ -1410,6 +1447,11 @@ if ("serviceWorker" in navigator) {
     },
     () => {},
   );
+  // asks the worker to finish downloading the catalog if a previous
+  // attempt was interrupted; near-instant once everything is cached
+  navigator.serviceWorker.ready.then((registration) => {
+    registration.active?.postMessage("ensure-offline");
+  });
 }
 
 boot();

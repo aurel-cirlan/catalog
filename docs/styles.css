@@ -708,3 +708,28 @@ footer.credit small {
   display: block;
   margin-top: 4px;
 }
+/* small banner reporting the background download that makes offline use possible */
+.offlineToast {
+  position: fixed;
+  left: 50%;
+  bottom: 18px;
+  transform: translate(-50%, 12px);
+  z-index: 50;
+  background: var(--raised);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 8px 16px;
+  font-size: 13px;
+  box-shadow: var(--lift);
+  opacity: 0;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+  pointer-events: none;
+  max-width: calc(100vw - 32px);
+  text-align: center;
+}
+
+.offlineToast.shown {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
