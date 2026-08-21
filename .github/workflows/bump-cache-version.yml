@@ -1,0 +1,35 @@
+name: Bump offline cache version
+on:
+  push:
+    branches: [main]
+    paths:
+      - "docs/app.js"
+      - "docs/styles.css"
+      - "docs/index.html"
+      - "docs/manifest.webmanifest"
+permissions:
+  contents: write
+jobs:
+  bump:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compute a version from the shell files' content
+        id: version
+        run: |
+          HASH=$(cat docs/app.js docs/styles.css docs/index.html docs/manifest.webmanifest | sha256sum | cut -c1-8)
+          echo "hash=$HASH" >> "$GITHUB_OUTPUT"
+      - name: Update SHELL_CACHE in sw.js
+        run: |
+          sed -i "s/const SHELL_CACHE = \"catalog-shell-[^\"]*\"/const SHELL_CACHE = \"catalog-shell-${{ steps.version.outputs.hash }}\"/" docs/sw.js
+      - name: Commit if the version actually changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if ! git diff --quiet docs/sw.js; then
+            git add docs/sw.js
+            git commit -m "chore: bump offline cache version"
+            git push
+          else
+            echo "Cache version unchanged, nothing to commit."
+          fi
