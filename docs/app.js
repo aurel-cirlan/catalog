@@ -1272,10 +1272,13 @@ const SHEET_CODE_RE = /^\d{6}[A-Z0-9]?$/;
 // the codes sit in the left column; quantities and stock live further right
 const SHEET_COLUMN = 0.45;
 const SHEET_CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ.,-/";
-// two readings of the same photo, small and large, catch different lines
+// multiple readings with different settings to catch codes from various distances
 const SHEET_PASSES = [
-  { width: 1900, mode: "6" },
-  { width: 2800, mode: "11" },
+  { width: 1900, mode: "6", contrast: 1.6 },
+  { width: 2800, mode: "11", contrast: 1.6 },
+  { width: 3200, mode: "6", contrast: 2.0 },
+  { width: 3800, mode: "11", contrast: 2.2 },
+  { width: 4500, mode: "6", contrast: 2.5 },
 ];
 
 // the first four digits of an article number are the catalog code
@@ -1289,13 +1292,13 @@ function sheetCodes(words, width, found) {
   }
 }
 
-function sheetCanvas(bitmap, target) {
+function sheetCanvas(bitmap, target, contrast = 1.6) {
   const scale = target / bitmap.width;
   const canvas = document.createElement("canvas");
   canvas.width = Math.round(bitmap.width * scale);
   canvas.height = Math.round(bitmap.height * scale);
   const context = canvas.getContext("2d");
-  context.filter = "grayscale(1) contrast(1.6)";
+  context.filter = `grayscale(1) contrast(${contrast})`;
   context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
   return canvas;
 }
@@ -1309,14 +1312,14 @@ function sheetStatus(text) {
 
 async function readSheet(file) {
   scanning = false;
-  sheetStatus("Citesc dispozi\u021bia\u2026 dureaz\u0103 ~30 de secunde");
+  sheetStatus("Citesc dispozi\u021bia\u2026 dureaz\u0103 ~45 de secunde");
   try {
     const bitmap = await createImageBitmap(file);
     const worker = await getRecogniser();
     await worker.setParameters({ tessedit_char_whitelist: SHEET_CHARS });
     const found = [];
     for (const pass of SHEET_PASSES) {
-      const canvas = sheetCanvas(bitmap, pass.width);
+      const canvas = sheetCanvas(bitmap, pass.width, pass.contrast);
       await worker.setParameters({ tessedit_pageseg_mode: pass.mode });
       const result = await worker.recognize(canvas);
       sheetCodes(result.data.words || [], canvas.width, found);
@@ -1325,7 +1328,7 @@ async function readSheet(file) {
     await worker.setParameters({ tessedit_char_whitelist: "0123456789" });
     if (!found.length) {
       sheetStatus(
-        "Nu am găsit coduri — fotografiază mai de aproape coloana Articol",
+        "Nu am găsit coduri — fotografiază mai de aproape coloana Articol sau asigură-te că poza e clară",
       );
       return;
     }
