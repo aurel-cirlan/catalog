@@ -1284,16 +1284,33 @@ const SHEET_PASSES = [
 
 // the first four digits of an article number are the catalog code
 function sheetCodes(words, width, found) {
+  console.log('Processing words:', words.length);
   for (const word of words) {
     const text = word.text.trim();
-    if (!SHEET_CODE_RE.test(text)) continue;
-    if (word.bbox.x0 / width > SHEET_COLUMN) continue;
+    console.log('Word:', text, 'Position:', word.bbox.x0 / width);
+    
+    if (!SHEET_CODE_RE.test(text)) {
+      console.log('Skipping word (no match regex):', text);
+      continue;
+    }
+    
+    if (word.bbox.x0 / width > SHEET_COLUMN) {
+      console.log('Skipping word (outside column):', text, 'Position:', word.bbox.x0 / width);
+      continue;
+    }
+    
     // Extract first 4 digits from the recognized text
     const digits = text.replace(/\D/g, '').slice(0, 4);
+    console.log('Extracted digits:', digits);
+    
     if (digits.length === 4 && hitByCode(digits) && !found.includes(digits)) {
+      console.log('Found valid code:', digits);
       found.push(digits);
+    } else {
+      console.log('Skipping digits (invalid or duplicate):', digits);
     }
   }
+  console.log('Total found:', found.length);
 }
 
 function sheetCanvas(bitmap, target, contrast = 1.6) {
@@ -1337,18 +1354,27 @@ async function readSheet(file) {
       return;
     }
 
+    console.log('Starting sheet scan for file:', file.name, 'Size:', file.size);
     const bitmap = await createImageBitmap(file);
+    console.log('Bitmap created:', bitmap.width, 'x', bitmap.height);
+    
     const worker = await getRecogniser();
     await worker.setParameters({ tessedit_char_whitelist: SHEET_CHARS });
     const found = [];
+    
     for (const pass of SHEET_PASSES) {
+      console.log('Pass:', pass);
       const canvas = sheetCanvas(bitmap, pass.width, pass.contrast);
       await worker.setParameters({ tessedit_pageseg_mode: pass.mode });
       const result = await worker.recognize(canvas);
+      console.log('OCR result words:', result.data.words?.length);
       sheetCodes(result.data.words || [], canvas.width, found);
       sheetStatus(`Am găsit ${found.length} articole…`);
     }
+    
+    console.log('Final found codes:', found);
     await worker.setParameters({ tessedit_char_whitelist: "0123456789" });
+    
     if (!found.length) {
       sheetStatus(
         "Nu am găsit coduri — sfaturi: fotografiază mai de aproape, asigură-te că poza e clară, cu lumină bună, și că coloana Articol e vizibilă",
