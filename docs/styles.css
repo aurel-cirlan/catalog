@@ -87,6 +87,7 @@ body {
   padding: 0 6px 0 14px;
   box-shadow: var(--lift);
   transition: border-color 0.15s ease;
+  position: relative;
 }
 
 .search:focus-within {
@@ -732,5 +733,54 @@ footer.credit small {
 .offlineToast.shown {
   opacity: 1;
   transform: translate(-50%, 0);
+}
+
+/* Sugestii de căutare */
+.suggestions {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  max-height: 300px;
+  overflow-y: auto;
+  box-shadow: var(--lift);
+  z-index: 10;
+}
+
+.suggestionItem {
+  padding: 10px 14px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--line);
+  transition: background 0.15s ease;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.suggestionItem:last-child {
+  border-bottom: none;
+}
+
+.suggestionItem:hover {
+  background: var(--accent-soft);
+}
+
+.suggestionItem.active {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+}
+
+.suggestionCode {
+  font-weight: 600;
+  color: var(--accent);
+  min-width: 60px;
+}
+
+.suggestionName {
+  color: var(--muted);
+  font-size: 14px;
 }
 /* test robot */

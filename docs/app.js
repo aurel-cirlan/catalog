@@ -20,6 +20,8 @@ const MAX_SECTION_RESULTS = 400;
 const MAX_HISTORY = 8;
 const NEIGHBOUR_LIMIT = 20;
 const CODE_RE = /\d{4}/g;
+const MAX_SUGGESTIONS = 8;
+const SUGGESTION_HISTORY_KEY = "catalog.suggestionHistory";
 
 const els = {
   query: document.getElementById("query"),
@@ -103,6 +105,8 @@ const els = {
   zoomOut: document.getElementById("zoomOut"),
   fit: document.getElementById("fit"),
   zoomMode: document.getElementById("zoomMode"),
+  suggestions: document.getElementById("suggestions"),
+  search: document.querySelector(".search"),
 };
 
 let hits = [];
@@ -122,6 +126,7 @@ const favourites = new Set(
 );
 let history = JSON.parse(localStorage.getItem(HISTORY_KEY) || "[]");
 const notes = JSON.parse(localStorage.getItem(NOTES_KEY) || "{}");
+let suggestionHistory = JSON.parse(localStorage.getItem(SUGGESTION_HISTORY_KEY) || "[]");
 let worklist = JSON.parse(localStorage.getItem(WORKLIST_KEY) || "[]");
 // several named lists (one per site or per job), the active one is the worklist
 let lists = JSON.parse(localStorage.getItem(LISTS_KEY) || "{}");
@@ -137,6 +142,101 @@ let sharedKind = "";
 function saveNotes() {
   localStorage.setItem(NOTES_KEY, JSON.stringify(notes));
 }
+
+function saveSuggestionHistory() {
+  localStorage.setItem(SUGGESTION_HISTORY_KEY, JSON.stringify(suggestionHistory));
+}
+
+function addToSuggestionHistory(term) {
+  const clean = term.trim();
+  if (!clean) return;
+  suggestionHistory = [clean, ...suggestionHistory.filter((item) => item !== clean)].slice(
+    0,
+    MAX_HISTORY,
+  );
+  saveSuggestionHistory();
+}
+
+function getSuggestions(term) {
+  const clean = normalise(term.trim());
+  if (!clean || clean.length < 2) return [];
+
+  const suggestions = [];
+  const seen = new Set();
+
+  // Add codes first (priority)
+  for (const hit of hits) {
+    if (hit.code.includes(clean) && !seen.has(hit.code)) {
+      suggestions.push({ type: 'code', value: hit.code });
+      seen.add(hit.code);
+    }
+  }
+
+  // Add from history
+  for (const item of suggestionHistory) {
+    if (normalise(item).includes(clean) && !seen.has(item)) {
+      suggestions.push({ type: 'history', value: item });
+      seen.add(item);
+    }
+  }
+
+  // Add names from articles
+  for (const hit of hits) {
+    if (hit.haystack.includes(clean)) {
+      if (hit.ro && !seen.has(hit.ro)) {
+        suggestions.push({ type: 'name', value: hit.ro });
+        seen.add(hit.ro);
+      }
+      if (hit.name && !seen.has(hit.name)) {
+        suggestions.push({ type: 'name', value: hit.name });
+        seen.add(hit.name);
+      }
+    }
+  }
+
+  return suggestions.slice(0, MAX_SUGGESTIONS);
+}
+
+function renderSuggestions(term) {
+  const suggestions = getSuggestions(term);
+  if (suggestions.length === 0) {
+    els.suggestions.hidden = true;
+    return;
+  }
+
+  els.suggestions.hidden = false;
+  els.suggestions.replaceChildren();
+
+  for (const suggestion of suggestions) {
+    const item = document.createElement("div");
+    item.className = "suggestionItem";
+
+    const span = document.createElement("span");
+    if (suggestion.type === 'code') {
+      span.className = "suggestionCode";
+    } else {
+      span.className = "suggestionName";
+    }
+    span.textContent = suggestion.value;
+    item.append(span);
+
+    item.addEventListener("click", () => {
+      els.query.value = suggestion.value;
+      els.suggestions.hidden = true;
+      remember(suggestion.value);
+      addToSuggestionHistory(suggestion.value);
+      render(suggestion.value);
+    });
+    els.suggestions.append(item);
+  }
+}
+
+// Hide suggestions when clicking outside
+document.addEventListener("click", (e) => {
+  if (!els.query.parentElement.contains(e.target)) {
+    els.suggestions.hidden = true;
+  }
+});
 
 function saveWorklist() {
   lists[listName] = worklist;
@@ -166,6 +266,7 @@ function remember(term) {
     MAX_HISTORY,
   );
   localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+  addToSuggestionHistory(clean);
 }
 
 function applyTheme(theme) {
@@ -1054,11 +1155,16 @@ async function scanLoop() {
   }
 }
 
-els.query.addEventListener("input", () => render(els.query.value));
+els.query.addEventListener("input", () => {
+  const term = els.query.value;
+  renderSuggestions(term);
+  render(term);
+});
 els.clear.addEventListener("click", () => {
   els.query.value = "";
   activeGroup = null;
   activeSection = null;
+  els.suggestions.hidden = true;
   els.query.focus();
   render("");
 });
