@@ -1267,8 +1267,8 @@ async function readFrame(round) {
   };
 }
 
-// article numbers on a picking list: six digits, sometimes a letter or digit after
-const SHEET_CODE_RE = /^\d{6}[A-Z0-9]?$/;
+// article numbers on a picking list: extract first 4 digits (GEALAN catalog code)
+const SHEET_CODE_RE = /^\d{4,}/;
 // the codes sit in the left column; quantities and stock live further right
 const SHEET_COLUMN = 0.45;
 const SHEET_CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ.,-/";
@@ -1287,8 +1287,11 @@ function sheetCodes(words, width, found) {
     const text = word.text.trim();
     if (!SHEET_CODE_RE.test(text)) continue;
     if (word.bbox.x0 / width > SHEET_COLUMN) continue;
-    const code = text.slice(0, 4);
-    if (hitByCode(code) && !found.includes(code)) found.push(code);
+    // Extract first 4 digits from the recognized text
+    const digits = text.replace(/\D/g, '').slice(0, 4);
+    if (digits.length === 4 && hitByCode(digits) && !found.includes(digits)) {
+      found.push(digits);
+    }
   }
 }
 
