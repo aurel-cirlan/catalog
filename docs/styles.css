@@ -75,6 +75,9 @@ body {
   backdrop-filter: blur(12px);
   padding: calc(12px + env(safe-area-inset-top)) 14px 8px;
   border-bottom: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .search {
@@ -789,5 +792,111 @@ footer.credit small {
   font-size: 14px;
   font-weight: 600;
   min-width: 28px;
+}
+
+/* Hamburger menu styling */
+.menuToggle {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 20px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.menuToggle:hover {
+  background: var(--raised);
+}
+
+.menuBackdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 100;
+  backdrop-filter: blur(4px);
+}
+
+.menu {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 280px;
+  max-width: 80vw;
+  background: var(--panel);
+  border-right: 1px solid var(--line);
+  z-index: 101;
+  padding: 0;
+  border-radius: 0;
+  box-shadow: var(--lift);
+}
+
+.menuHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  border-bottom: 1px solid var(--line);
+}
+
+.menuClose {
+  background: var(--raised);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 20px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.menuClose:hover {
+  background: var(--line);
+}
+
+.menuHeader h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.menuNav {
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.menuItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  text-align: left;
+  font-size: 16px;
+  color: var(--text);
+}
+
+.menuItem:hover {
+  background: var(--accent-soft);
+}
+
+.menuItem.active {
+  background: var(--accent-soft);
+  border: 1px solid var(--accent);
+}
+
+.menuIcon {
+  font-size: 20px;
+  min-width: 24px;
+}
+
+.menuText {
+  flex: 1;
 }
 /* test robot */

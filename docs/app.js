@@ -109,6 +109,10 @@ const els = {
   suggestions: document.getElementById("suggestions"),
   search: document.querySelector(".search"),
   lang: document.getElementById("lang"),
+  menuToggle: document.getElementById("menuToggle"),
+  menu: document.getElementById("menu"),
+  menuClose: document.getElementById("menuClose"),
+  menuBackdrop: document.getElementById("menuBackdrop"),
 };
 
 let hits = [];
@@ -187,6 +191,13 @@ const translations = {
     help: "Cum se folosește",
     theme: "☀",
     lang: "🌐",
+    menuHome: "Home",
+    menuFavourites: "Favorite",
+    menuHistory: "Istoric",
+    menuWorklist: "Liste de lucru",
+    menuSettings: "Setări",
+    menuHelp: "Ajutor",
+    menuAbout: "Despre",
   },
   en: {
     placeholder: "Code or name",
@@ -243,6 +254,13 @@ const translations = {
     help: "How to use",
     theme: "☀",
     lang: "🌐",
+    menuHome: "Home",
+    menuFavourites: "Favorites",
+    menuHistory: "History",
+    menuWorklist: "Worklist",
+    menuSettings: "Settings",
+    menuHelp: "Help",
+    menuAbout: "About",
   },
   de: {
     placeholder: "Code oder Name",
@@ -299,6 +317,13 @@ const translations = {
     help: "So verwenden",
     theme: "☀",
     lang: "🌐",
+    menuHome: "Home",
+    menuFavourites: "Favoriten",
+    menuHistory: "Verlauf",
+    menuWorklist: "Arbeitsliste",
+    menuSettings: "Einstellungen",
+    menuHelp: "Hilfe",
+    menuAbout: "Über",
   },
 };
 
@@ -338,6 +363,106 @@ function cycleLanguage() {
   const currentIndex = langs.indexOf(currentLang);
   const nextIndex = (currentIndex + 1) % langs.length;
   setLanguage(langs[nextIndex]);
+}
+
+// Menu functions
+function openMenu() {
+  els.menu.showModal();
+  els.menuBackdrop.hidden = false;
+  updateMenuLanguage();
+}
+
+function closeMenu() {
+  els.menu.close();
+  els.menuBackdrop.hidden = true;
+}
+
+function updateMenuLanguage() {
+  const t = translations[currentLang];
+  const menuItems = els.menu.querySelectorAll('.menuItem');
+
+  const sectionToKey = {
+    home: 'menuHome',
+    favourites: 'menuFavourites',
+    history: 'menuHistory',
+    worklist: 'menuWorklist',
+    settings: 'menuSettings',
+    help: 'menuHelp',
+    about: 'menuAbout',
+  };
+
+  menuItems.forEach(item => {
+    const section = item.dataset.section;
+    const textSpan = item.querySelector('.menuText');
+    const key = sectionToKey[section];
+    if (textSpan && key && t[key]) {
+      textSpan.textContent = t[key];
+    }
+  });
+}
+
+function navigateToSection(section) {
+  closeMenu();
+
+  switch(section) {
+    case 'home':
+      els.query.value = '';
+      els.query.focus();
+      render('');
+      break;
+    case 'favourites':
+      const saved = [...favourites];
+      if (saved.length === 0) {
+        return;
+      }
+      els.query.value = '';
+      renderFavourites();
+      els.favourites.hidden = false;
+      els.recent.hidden = true;
+      els.history.hidden = true;
+      els.worklist.hidden = true;
+      els.depths.hidden = true;
+      els.sections.hidden = true;
+      els.status.textContent = `${saved.length} ${translations[currentLang].favourites}`;
+      break;
+    case 'history':
+      if (history.length === 0) {
+        return;
+      }
+      els.query.value = '';
+      renderHistory();
+      els.favourites.hidden = true;
+      els.recent.hidden = true;
+      els.history.hidden = false;
+      els.worklist.hidden = true;
+      els.depths.hidden = true;
+      els.sections.hidden = true;
+      els.status.textContent = `${history.length} ${translations[currentLang].history}`;
+      break;
+    case 'worklist':
+      if (worklist.length === 0 && Object.keys(lists).length < 2) {
+        return;
+      }
+      els.query.value = '';
+      renderWorklist();
+      els.favourites.hidden = true;
+      els.recent.hidden = true;
+      els.history.hidden = true;
+      els.worklist.hidden = false;
+      els.depths.hidden = true;
+      els.sections.hidden = true;
+      break;
+    case 'settings':
+      // Could open a settings dialog
+      cycleLanguage();
+      break;
+    case 'help':
+      els.guide.showModal();
+      break;
+    case 'about':
+      alert('Catalog GEALAN\nCreat de Aurel Cîrlan\nhttps://aurelcirlan.ro\n\nAplicație independentă și gratuită, fără afiliere oficială cu GEALAN.');
+      break;
+  }
 }
 let worklist = JSON.parse(localStorage.getItem(WORKLIST_KEY) || "[]");
 // several named lists (one per site or per job), the active one is the worklist
@@ -1410,6 +1535,19 @@ els.theme.addEventListener("click", () =>
   ),
 );
 els.lang.addEventListener("click", cycleLanguage);
+els.menuToggle.addEventListener("click", openMenu);
+els.menuClose.addEventListener("click", closeMenu);
+els.menuBackdrop.addEventListener("click", closeMenu);
+els.menu.addEventListener("close", closeMenu);
+
+// Menu item navigation
+els.menu.querySelectorAll('.menuItem').forEach(item => {
+  item.addEventListener('click', () => {
+    const section = item.dataset.section;
+    navigateToSection(section);
+  });
+});
+
 els.scan.addEventListener("click", openScanner);
 els.scanShot.addEventListener("click", scanLoop);
 els.scanTorch.addEventListener("click", toggleTorch);
