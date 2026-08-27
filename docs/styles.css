@@ -78,6 +78,7 @@ body {
   display: flex;
   align-items: center;
   gap: 12px;
+  flex-wrap: wrap;
 }
 
 .search {
@@ -91,6 +92,8 @@ body {
   box-shadow: var(--lift);
   transition: border-color 0.15s ease;
   position: relative;
+  flex: 1;
+  min-width: 0;
 }
 
 .search:focus-within {
@@ -803,6 +806,9 @@ footer.credit small {
   font-size: 20px;
   cursor: pointer;
   transition: background 0.15s ease;
+  flex-shrink: 0;
+  z-index: 10;
+  pointer-events: auto;
 }
 
 .menuToggle:hover {
@@ -830,6 +836,7 @@ footer.credit small {
   padding: 0;
   border-radius: 0;
   box-shadow: var(--lift);
+  margin: 0;
 }
 
 .menuHeader {

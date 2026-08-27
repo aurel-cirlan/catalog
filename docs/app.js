@@ -367,14 +367,18 @@ function cycleLanguage() {
 
 // Menu functions
 function openMenu() {
+  console.log('Opening menu...');
   els.menu.showModal();
   els.menuBackdrop.hidden = false;
   updateMenuLanguage();
+  console.log('Menu opened');
 }
 
 function closeMenu() {
+  console.log('Closing menu...');
   els.menu.close();
   els.menuBackdrop.hidden = true;
+  console.log('Menu closed');
 }
 
 function updateMenuLanguage() {
@@ -1535,7 +1539,10 @@ els.theme.addEventListener("click", () =>
   ),
 );
 els.lang.addEventListener("click", cycleLanguage);
-els.menuToggle.addEventListener("click", openMenu);
+els.menuToggle.addEventListener("click", () => {
+  console.log('Menu toggle clicked');
+  openMenu();
+});
 els.menuClose.addEventListener("click", closeMenu);
 els.menuBackdrop.addEventListener("click", closeMenu);
 els.menu.addEventListener("close", closeMenu);
