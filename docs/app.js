@@ -1271,14 +1271,15 @@ async function readFrame(round) {
 const SHEET_CODE_RE = /^\d{4,}/;
 // the codes sit in the left column; quantities and stock live further right
 const SHEET_COLUMN = 0.45;
-const SHEET_CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ.,-/";
+const SHEET_CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ.,-/QRGX";
 // multiple readings with different settings to catch codes from various distances
 const SHEET_PASSES = [
-  { width: 1900, mode: "6", contrast: 1.6 },
-  { width: 2800, mode: "11", contrast: 1.6 },
-  { width: 3200, mode: "6", contrast: 2.0 },
-  { width: 3800, mode: "11", contrast: 2.2 },
-  { width: 4500, mode: "6", contrast: 2.5 },
+  { width: 1900, mode: "6", contrast: 1.8 },
+  { width: 2800, mode: "11", contrast: 2.0 },
+  { width: 3200, mode: "6", contrast: 2.5 },
+  { width: 3800, mode: "11", contrast: 3.0 },
+  { width: 4500, mode: "6", contrast: 3.5 },
+  { width: 5000, mode: "11", contrast: 4.0 },
 ];
 
 // the first four digits of an article number are the catalog code
@@ -1301,8 +1302,11 @@ function sheetCanvas(bitmap, target, contrast = 1.6) {
   canvas.width = Math.round(bitmap.width * scale);
   canvas.height = Math.round(bitmap.height * scale);
   const context = canvas.getContext("2d");
-  context.filter = `grayscale(1) contrast(${contrast})`;
+  
+  // Enhanced preprocessing with multiple filters
+  context.filter = `grayscale(1) contrast(${contrast}) brightness(1.1) saturate(1.2)`;
   context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+  
   return canvas;
 }
 
@@ -1315,7 +1319,7 @@ function sheetStatus(text) {
 
 async function readSheet(file) {
   scanning = false;
-  sheetStatus("Citesc dispozi\u021bia\u2026 dureaz\u0103 ~45 de secunde");
+  sheetStatus("Citesc dispozi\u021bia\u2026 dureaz\u0103 ~60 de secunde");
   try {
     // Validate file
     if (!file) {
@@ -1347,7 +1351,7 @@ async function readSheet(file) {
     await worker.setParameters({ tessedit_char_whitelist: "0123456789" });
     if (!found.length) {
       sheetStatus(
-        "Nu am găsit coduri — sfaturi: fotografiază mai de aproape, asigură-te că poza e clară, sau încearcă cu lumină mai bună",
+        "Nu am găsit coduri — sfaturi: fotografiază mai de aproape, asigură-te că poza e clară, cu lumină bună, și că coloana Articol e vizibilă",
       );
       return;
     }
@@ -1360,7 +1364,7 @@ async function readSheet(file) {
     render("");
   } catch (error) {
     console.error('Sheet scan error:', error);
-    sheetStatus(`Eroare: ${error.message || 'Poza nu a putut fi citită'} — încearcă cu o altă poza`);
+    sheetStatus(`Eroare: ${error.message || 'Poza nu a putut fi citită'} — încearcă cu o altă poza sau verifică formatul (JPG, PNG)`);
   }
 }
 
