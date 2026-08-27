@@ -783,4 +783,11 @@ footer.credit small {
   color: var(--muted);
   font-size: 14px;
 }
+
+/* Language button styling */
+#lang {
+  font-size: 14px;
+  font-weight: 600;
+  min-width: 28px;
+}
 /* test robot */

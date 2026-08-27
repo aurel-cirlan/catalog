@@ -22,6 +22,7 @@ const NEIGHBOUR_LIMIT = 20;
 const CODE_RE = /\d{4}/g;
 const MAX_SUGGESTIONS = 8;
 const SUGGESTION_HISTORY_KEY = "catalog.suggestionHistory";
+const LANG_KEY = "catalog.lang";
 
 const els = {
   query: document.getElementById("query"),
@@ -107,6 +108,7 @@ const els = {
   zoomMode: document.getElementById("zoomMode"),
   suggestions: document.getElementById("suggestions"),
   search: document.querySelector(".search"),
+  lang: document.getElementById("lang"),
 };
 
 let hits = [];
@@ -127,6 +129,216 @@ const favourites = new Set(
 let history = JSON.parse(localStorage.getItem(HISTORY_KEY) || "[]");
 const notes = JSON.parse(localStorage.getItem(NOTES_KEY) || "{}");
 let suggestionHistory = JSON.parse(localStorage.getItem(SUGGESTION_HISTORY_KEY) || "[]");
+let currentLang = localStorage.getItem(LANG_KEY) || "ro";
+
+const translations = {
+  ro: {
+    placeholder: "Cod sau denumire",
+    statusLoading: "Se încarcă catalogul…",
+    statusIndexed: "poziții indexate · caută cod sau denumire",
+    statusResults: "rezultate",
+    statusEmpty: "Niciun rezultat",
+    scanSheet: "📄 Scanează dispoziția",
+    recent: "Ultimul articol deschis",
+    favourites: "Favorite",
+    history: "Căutări recente",
+    worklist: "Listă de lucru",
+    send: "trimite",
+    newList: "listă nouă",
+    delete: "șterge",
+    clear: "golește",
+    depths: "Adâncime constructivă",
+    categories: "Categorii",
+    back: "Înapoi",
+    share: "Trimite",
+    sharePage: "📄",
+    favorite: "Favorit",
+    addList: "＋ Listă",
+    compare: "⇄ Compară",
+    print: "🖨 Printează",
+    zoomIn: "+",
+    zoomOut: "−",
+    fitPage: "Toată pagina",
+    zoomArticle: "🔎 Articol",
+    close: "×",
+    theme: "☀",
+    lang: "🌐",
+    help: "?",
+    sheetScan: "📄 Scanează dispoziția",
+    scanClose: "Înapoi",
+    scanStatus: "Apropie codul de chenar",
+    scanTorch: "💡 Lumină",
+    scanShot: "Citește acum",
+    sheetStatusHidden: true,
+    shared: "Listă primită",
+    sharedSave: "salvează la mine",
+    sharedClose: "închide",
+    recentClear: "șterge",
+    favouriteClear: "golește",
+    historyClear: "golește",
+    worklistClear: "golește",
+    worklistDrop: "șterge",
+    addList: "＋ Listă",
+    compareAdd: "⇄ Compară",
+    compareClose: "Înapoi",
+    compareReset: "Golește",
+    guide: "Cum se folosește",
+    guideClose: "Am înțeles",
+    help: "Cum se folosește",
+    theme: "☀",
+    lang: "🌐",
+  },
+  en: {
+    placeholder: "Code or name",
+    statusLoading: "Loading catalog…",
+    statusIndexed: "positions indexed · search code or name",
+    statusResults: "results",
+    statusEmpty: "No results",
+    scanSheet: "📄 Scan sheet",
+    recent: "Last opened article",
+    favourites: "Favorites",
+    history: "Recent searches",
+    worklist: "Worklist",
+    send: "send",
+    newList: "new list",
+    delete: "delete",
+    clear: "clear",
+    depths: "Construction depth",
+    categories: "Categories",
+    back: "Back",
+    share: "Share",
+    sharePage: "📄",
+    favorite: "Favorite",
+    addList: "＋ List",
+    compare: "⇄ Compare",
+    print: "🖨 Print",
+    zoomIn: "+",
+    zoomOut: "−",
+    fitPage: "Full page",
+    zoomArticle: "🔎 Article",
+    close: "×",
+    theme: "☀",
+    lang: "🌐",
+    help: "?",
+    sheetScan: "📄 Scan sheet",
+    scanClose: "Back",
+    scanStatus: "Bring code closer to frame",
+    scanTorch: "💡 Light",
+    scanShot: "Read now",
+    sheetStatusHidden: true,
+    shared: "Received list",
+    sharedSave: "save to mine",
+    sharedClose: "close",
+    recentClear: "clear",
+    favouriteClear: "clear",
+    historyClear: "clear",
+    worklistClear: "clear",
+    worklistDrop: "delete",
+    addList: "＋ List",
+    compareAdd: "⇄ Compare",
+    compareClose: "Back",
+    compareReset: "Clear",
+    guide: "How to use",
+    guideClose: "Got it",
+    help: "How to use",
+    theme: "☀",
+    lang: "🌐",
+  },
+  de: {
+    placeholder: "Code oder Name",
+    statusLoading: "Katalog wird geladen…",
+    statusIndexed: "Positionen indexiert · Code oder Name suchen",
+    statusResults: "Ergebnisse",
+    statusEmpty: "Keine Ergebnisse",
+    scanSheet: "📄 Scan Blatt",
+    recent: "Zuletzt geöffneter Artikel",
+    favourites: "Favoriten",
+    history: "Letzte Suchen",
+    worklist: "Arbeitsliste",
+    send: "senden",
+    newList: "neue Liste",
+    delete: "löschen",
+    clear: "leeren",
+    depths: "Aufbautiefe",
+    categories: "Kategorien",
+    back: "Zurück",
+    share: "Teilen",
+    sharePage: "📄",
+    favorite: "Favorit",
+    addList: "＋ Liste",
+    compare: "⇄ Vergleichen",
+    print: "🖨 Drucken",
+    zoomIn: "+",
+    zoomOut: "−",
+    fitPage: "Gesamte Seite",
+    zoomArticle: "🔎 Artikel",
+    close: "×",
+    theme: "☀",
+    lang: "🌐",
+    help: "?",
+    sheetScan: "📄 Scan Blatt",
+    scanClose: "Zurück",
+    scanStatus: "Code näher an Rahmen bringen",
+    scanTorch: "💡 Licht",
+    scanShot: "Jetzt lesen",
+    sheetStatusHidden: true,
+    shared: "Empfangene Liste",
+    sharedSave: "zu mir speichern",
+    sharedClose: "schließen",
+    recentClear: "löschen",
+    favouriteClear: "leeren",
+    historyClear: "leeren",
+    worklistClear: "leeren",
+    worklistDrop: "löschen",
+    addList: "＋ Liste",
+    compareAdd: "⇄ Vergleichen",
+    compareClose: "Zurück",
+    compareReset: "Leeren",
+    guide: "So verwenden",
+    guideClose: "Verstanden",
+    help: "So verwenden",
+    theme: "☀",
+    lang: "🌐",
+  },
+};
+
+function setLanguage(lang) {
+  currentLang = lang;
+  localStorage.setItem(LANG_KEY, lang);
+  updateLanguage();
+}
+
+function updateLanguage() {
+  const t = translations[currentLang];
+
+  // Update placeholder
+  els.query.placeholder = t.placeholder;
+
+  // Update theme button
+  els.theme.textContent = document.documentElement.dataset.theme === "light" ? "🌙" : "☀";
+
+  // Update language button
+  els.lang.textContent = currentLang.toUpperCase();
+
+  // Update status messages (simplified for now)
+  if (els.status.textContent.includes("Se încarcă") || els.status.textContent.includes("Loading") || els.status.textContent.includes("Katalog")) {
+    els.status.textContent = t.statusLoading;
+  }
+
+  // Update scan sheet button
+  if (els.sheetScan) {
+    els.sheetScan.textContent = t.scanSheet;
+  }
+
+  // This will need to be expanded for all UI elements
+}
+
+function cycleLanguage() {
+  const langs = ['ro', 'en', 'de'];
+  const currentIndex = langs.indexOf(currentLang);
+  const nextIndex = (currentIndex + 1) % langs.length;
+  setLanguage(langs[nextIndex]);
+}
 let worklist = JSON.parse(localStorage.getItem(WORKLIST_KEY) || "[]");
 // several named lists (one per site or per job), the active one is the worklist
 let lists = JSON.parse(localStorage.getItem(LISTS_KEY) || "{}");
@@ -1197,6 +1409,7 @@ els.theme.addEventListener("click", () =>
     document.documentElement.dataset.theme === "light" ? "dark" : "light",
   ),
 );
+els.lang.addEventListener("click", cycleLanguage);
 els.scan.addEventListener("click", openScanner);
 els.scanShot.addEventListener("click", scanLoop);
 els.scanTorch.addEventListener("click", toggleTorch);
@@ -1499,6 +1712,7 @@ els.watermark.textContent = new Array(400).fill("aurelcirlan.ro").join(" ");
 
 applyTheme(localStorage.getItem(THEME_KEY) || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
 setZoomMode(zoomMode);
+updateLanguage();
 
 // a small, self-dismissing banner reporting how the offline download is going
 function offlineToast() {
