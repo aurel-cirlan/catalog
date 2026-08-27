@@ -1314,6 +1314,22 @@ async function readSheet(file) {
   scanning = false;
   sheetStatus("Citesc dispozi\u021bia\u2026 dureaz\u0103 ~45 de secunde");
   try {
+    // Validate file
+    if (!file) {
+      sheetStatus("Eroare: Niciun fișier selectat");
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) { // 10MB limit
+      sheetStatus("Eroare: Poza e prea mare (max 10MB)");
+      return;
+    }
+
+    if (!file.type.startsWith('image/')) {
+      sheetStatus("Eroare: Fișierul nu este o imagine (selectează JPG, PNG, WEBP)");
+      return;
+    }
+
     const bitmap = await createImageBitmap(file);
     const worker = await getRecogniser();
     await worker.setParameters({ tessedit_char_whitelist: SHEET_CHARS });
@@ -1339,8 +1355,9 @@ async function readSheet(file) {
     sharedKind = "scanată";
     els.query.value = "";
     render("");
-  } catch {
-    sheetStatus("Poza nu a putut fi citită");
+  } catch (error) {
+    console.error('Sheet scan error:', error);
+    sheetStatus(`Eroare: ${error.message || 'Poza nu a putut fi citită'} — încearcă cu o altă poza`);
   }
 }
 
