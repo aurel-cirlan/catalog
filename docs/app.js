@@ -103,7 +103,6 @@ const els = {
   zoomOut: document.getElementById("zoomOut"),
   fit: document.getElementById("fit"),
   zoomMode: document.getElementById("zoomMode"),
-  voice: document.getElementById("voice"),
 };
 
 let hits = [];
@@ -1063,81 +1062,6 @@ els.clear.addEventListener("click", () => {
   els.query.focus();
   render("");
 });
-
-// Web Speech API pentru căutare vocală
-let speechRecognition = null;
-let isListening = false;
-
-function initSpeechRecognition() {
-  console.log('Init speech recognition...');
-  console.log('webkitSpeechRecognition in window:', 'webkitSpeechRecognition' in window);
-  console.log('SpeechRecognition in window:', 'SpeechRecognition' in window);
-
-  if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-    console.log('Speech recognition not supported');
-    els.voice.hidden = true;
-    return;
-  }
-
-  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  console.log('Using SpeechRecognition:', SpeechRecognition);
-  speechRecognition = new SpeechRecognition();
-  speechRecognition.lang = 'ro-RO';
-  speechRecognition.continuous = false;
-  speechRecognition.interimResults = false;
-
-  speechRecognition.onstart = () => {
-    console.log('Speech recognition started');
-    isListening = true;
-    els.voice.textContent = '🔴';
-    els.voice.setAttribute('aria-label', 'Se ascultă...');
-  };
-
-  speechRecognition.onend = () => {
-    console.log('Speech recognition ended');
-    isListening = false;
-    els.voice.textContent = '🎤';
-    els.voice.setAttribute('aria-label', 'Căutare vocală');
-  };
-
-  speechRecognition.onresult = (event) => {
-    console.log('Speech recognition result:', event);
-    const transcript = event.results[0][0].transcript;
-    console.log('Transcript:', transcript);
-    els.query.value = transcript;
-    remember(transcript);
-    render(transcript);
-  };
-
-  speechRecognition.onerror = (event) => {
-    console.error('Speech recognition error:', event.error);
-    isListening = false;
-    els.voice.textContent = '🎤';
-    els.voice.setAttribute('aria-label', 'Căutare vocală');
-  };
-}
-
-els.voice.addEventListener('click', () => {
-  console.log('Voice button clicked');
-  if (!speechRecognition) {
-    console.log('Initializing speech recognition...');
-    initSpeechRecognition();
-    if (!speechRecognition) {
-      console.log('Speech recognition not supported');
-      alert('Căutarea vocală nu este suportată în acest browser.');
-      return;
-    }
-  }
-
-  if (isListening) {
-    console.log('Stopping speech recognition...');
-    speechRecognition.stop();
-  } else {
-    console.log('Starting speech recognition...');
-    speechRecognition.start();
-  }
-});
-
 els.close.addEventListener("click", () => els.viewer.close());
 els.zoomIn.addEventListener("click", () => {
   zoom = Math.min(zoom * 1.4, 8);
