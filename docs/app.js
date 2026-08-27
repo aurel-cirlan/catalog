@@ -1344,7 +1344,7 @@ async function readSheet(file) {
     await worker.setParameters({ tessedit_char_whitelist: "0123456789" });
     if (!found.length) {
       sheetStatus(
-        "Nu am găsit coduri — fotografiază mai de aproape coloana Articol sau asigură-te că poza e clară",
+        "Nu am găsit coduri — sfaturi: fotografiază mai de aproape, asigură-te că poza e clară, sau încearcă cu lumină mai bună",
       );
       return;
     }
@@ -1380,8 +1380,9 @@ async function scanLoop() {
       els.scanStatus.textContent = seen
         ? `Am citit ${seen}, dar nu e în catalog`
         : "Caut codul… ține telefonul nemișcat";
-    } catch {
-      els.scanStatus.textContent = "Scanarea nu a putut porni";
+    } catch (error) {
+      console.error('Scan loop error:', error);
+      els.scanStatus.textContent = `Eroare: ${error.message || 'Scanarea nu a putut porni'} — verifică permisiunile pentru camera`;
       return;
     }
   }
