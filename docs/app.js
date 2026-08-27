@@ -1268,7 +1268,8 @@ async function readFrame(round) {
 }
 
 // article numbers on a picking list: extract first 4 digits (GEALAN catalog code)
-const SHEET_CODE_RE = /^\d{4,}/;
+// More permissive regex: match any text containing 4+ consecutive digits
+const SHEET_CODE_RE = /\d{4,}/;
 // the codes sit in the left column; quantities and stock live further right
 const SHEET_COLUMN = 0.45;
 const SHEET_CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ.,-/QRGX";
@@ -1289,25 +1290,29 @@ function sheetCodes(words, width, found) {
     const text = word.text.trim();
     console.log('Word:', text, 'Position:', word.bbox.x0 / width);
     
-    if (!SHEET_CODE_RE.test(text)) {
-      console.log('Skipping word (no match regex):', text);
-      continue;
-    }
-    
+    // Skip if outside column
     if (word.bbox.x0 / width > SHEET_COLUMN) {
       console.log('Skipping word (outside column):', text, 'Position:', word.bbox.x0 / width);
       continue;
     }
     
-    // Extract first 4 digits from the recognized text
-    const digits = text.replace(/\D/g, '').slice(0, 4);
+    // Extract all digits from the recognized text
+    const digits = text.replace(/\D/g, '');
     console.log('Extracted digits:', digits);
     
-    if (digits.length === 4 && hitByCode(digits) && !found.includes(digits)) {
-      console.log('Found valid code:', digits);
-      found.push(digits);
+    // Check if we have at least 4 digits
+    if (digits.length >= 4) {
+      const code = digits.slice(0, 4);
+      console.log('Potential code:', code);
+      
+      if (hitByCode(code) && !found.includes(code)) {
+        console.log('Found valid code:', code);
+        found.push(code);
+      } else {
+        console.log('Skipping code (invalid or duplicate):', code);
+      }
     } else {
-      console.log('Skipping digits (invalid or duplicate):', digits);
+      console.log('Skipping word (not enough digits):', text, 'Digits:', digits);
     }
   }
   console.log('Total found:', found.length);
