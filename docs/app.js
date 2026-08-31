@@ -1270,17 +1270,16 @@ async function readFrame(round) {
 // More permissive regex: match any text containing 4+ consecutive digits
 const SHEET_CODE_RE = /\d{4,}/;
 // the codes sit in the left column; quantities and stock live further right
-// Increased from 0.45 to 0.60 to capture more of the image
-const SHEET_COLUMN = 0.60;
-const SHEET_CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz.,-/QRGX#*+=_";
+const SHEET_COLUMN = 0.45;
+const SHEET_CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ.,-/QRGX";
 // multiple readings with different settings to catch codes from various distances
 const SHEET_PASSES = [
-  { width: 1500, mode: "6", contrast: 1.5 },
-  { width: 1900, mode: "11", contrast: 1.8 },
-  { width: 2400, mode: "6", contrast: 2.0 },
-  { width: 2800, mode: "11", contrast: 2.2 },
+  { width: 1900, mode: "6", contrast: 1.8 },
+  { width: 2800, mode: "11", contrast: 2.0 },
   { width: 3200, mode: "6", contrast: 2.5 },
-  { width: 3800, mode: "11", contrast: 2.8 },
+  { width: 3800, mode: "11", contrast: 3.0 },
+  { width: 4500, mode: "6", contrast: 3.5 },
+  { width: 5000, mode: "11", contrast: 4.0 },
 ];
 
 // the first four digits of an article number are the catalog code
@@ -1293,44 +1292,15 @@ function sheetCodes(words, width, found) {
       continue;
     }
 
-    // Try multiple patterns to extract codes
-    // Pattern 1: Pure 4-digit code (most common)
-    const pureDigits = text.replace(/\D/g, '');
-    if (pureDigits.length >= 4) {
-      const code = pureDigits.slice(0, 4);
+    // Extract all digits from the recognized text
+    const digits = text.replace(/\D/g, '');
+
+    // Check if we have at least 4 digits
+    if (digits.length >= 4) {
+      const code = digits.slice(0, 4);
+
       if (hitByCode(code) && !found.includes(code)) {
         found.push(code);
-        continue;
-      }
-    }
-
-    // Pattern 2: Code with letters (e.g., "7093", "S 8000")
-    const letterCode = text.match(/([A-Za-z]?\s*\d{4})/);
-    if (letterCode) {
-      const code = letterCode[1].replace(/\D/g, '').slice(0, 4);
-      if (code.length >= 4 && hitByCode(code) && !found.includes(code)) {
-        found.push(code);
-        continue;
-      }
-    }
-
-    // Pattern 3: Code at beginning of text
-    const startCode = text.match(/^\s*(\d{4})/);
-    if (startCode) {
-      const code = startCode[1];
-      if (hitByCode(code) && !found.includes(code)) {
-        found.push(code);
-        continue;
-      }
-    }
-
-    // Pattern 4: Code anywhere in text with word boundaries
-    const anywhereCode = text.match(/\b(\d{4})\b/);
-    if (anywhereCode) {
-      const code = anywhereCode[1];
-      if (hitByCode(code) && !found.includes(code)) {
-        found.push(code);
-        continue;
       }
     }
   }
@@ -1343,33 +1313,9 @@ function sheetCanvas(bitmap, target, contrast = 1.6) {
   canvas.height = Math.round(bitmap.height * scale);
   const context = canvas.getContext("2d");
 
-  // Draw original image
+  // Enhanced preprocessing with multiple filters
+  context.filter = `grayscale(1) contrast(${contrast}) brightness(1.1) saturate(1.2)`;
   context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-
-  // Get image data for advanced preprocessing
-  const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-  const data = imageData.data;
-
-  // Apply contrast and brightness manually for better control
-  for (let i = 0; i < data.length; i += 4) {
-    // Convert to grayscale
-    const gray = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
-
-    // Apply contrast
-    const factor = (259 * (contrast * 255 + 255)) / (255 * (259 - contrast * 255));
-    const contrasted = factor * (gray - 128) + 128;
-
-    // Apply brightness
-    const brightened = contrasted + 20;
-
-    // Clamp values
-    data[i] = Math.max(0, Math.min(255, brightened));     // R
-    data[i + 1] = Math.max(0, Math.min(255, brightened)); // G
-    data[i + 2] = Math.max(0, Math.min(255, brightened)); // B
-    // Alpha remains unchanged
-  }
-
-  context.putImageData(imageData, 0, 0);
 
   return canvas;
 }
@@ -1383,48 +1329,18 @@ function sheetStatus(text) {
 
 async function readSheet(file) {
   scanning = false;
-  sheetStatus("Citesc dispozi\u021bia\u2026");
+  sheetStatus("Citesc dispozi\u021bia\u2026 dureaz\u0103 ~40 de secunde");
   try {
     const bitmap = await createImageBitmap(file);
     const worker = await getRecogniser();
     await worker.setParameters({ tessedit_char_whitelist: SHEET_CHARS });
     const found = [];
-    let passCount = 0;
-    const totalPasses = SHEET_PASSES.length;
-
-    sheetStatus(`Inițiez scanarea (0/${totalPasses})...`);
-
     for (const pass of SHEET_PASSES) {
-      passCount++;
-      const progress = Math.round((passCount / totalPasses) * 100);
-      sheetStatus(`Scanare ${passCount}/${totalPasses} (${progress}%)...`);
-
       const canvas = sheetCanvas(bitmap, pass.width, pass.contrast);
       await worker.setParameters({ tessedit_pageseg_mode: pass.mode });
-
-      // Add timeout for each pass to prevent hanging
-      const result = await Promise.race([
-        worker.recognize(canvas),
-        new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('Timeout la scanare')), 15000)
-        )
-      ]);
-
-      // Debug: log what Tesseract recognized
-      console.log(`Pass ${passCount}: Recognized ${result.data.words?.length || 0} words`);
-      if (result.data.words && result.data.words.length > 0) {
-        const sampleWords = result.data.words.slice(0, 5).map(w => w.text).join(', ');
-        console.log(`Sample words: ${sampleWords}`);
-      }
-
+      const result = await worker.recognize(canvas);
       sheetCodes(result.data.words || [], canvas.width, found);
-      console.log(`Pass ${passCount}: Found ${found.length} codes so far`);
-
-      if (found.length > 0) {
-        sheetStatus(`Scanare ${passCount}/${totalPasses} (${progress}%) - Am găsit ${found.length} articole...`);
-      }
     }
-
     await worker.setParameters({ tessedit_char_whitelist: "0123456789" });
 
     if (!found.length) {
@@ -1442,9 +1358,7 @@ async function readSheet(file) {
     render("");
   } catch (error) {
     console.error('Sheet scan error:', error);
-    if (error.message === 'Timeout la scanare') {
-      sheetStatus(`Eroare: Scanarea a durat prea mult — încearcă cu o poza mai mică sau mai clară`);
-    } else if (error.name === 'InvalidStateError') {
+    if (error.name === 'InvalidStateError') {
       sheetStatus(`Eroare: Imaginea nu poate fi decodată — încearcă cu o altă poza (JPG, PNG, WEBP) sau verifică dacă fișierul este corupt`);
     } else {
       sheetStatus(`Eroare: ${error.message || 'Poza nu a putut fi citită'} — încearcă cu o altă poza sau verifică formatul (JPG, PNG)`);
