@@ -1270,37 +1270,71 @@ async function readFrame(round) {
 // More permissive regex: match any text containing 4+ consecutive digits
 const SHEET_CODE_RE = /\d{4,}/;
 // the codes sit in the left column; quantities and stock live further right
-const SHEET_COLUMN = 0.45;
-const SHEET_CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ.,-/QRGX";
+// Increased from 0.45 to 0.60 to capture more of the image
+const SHEET_COLUMN = 0.60;
+const SHEET_CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz.,-/QRGX#*+=_";
 // multiple readings with different settings to catch codes from various distances
 const SHEET_PASSES = [
-  { width: 1900, mode: "6", contrast: 1.8 },
-  { width: 2800, mode: "11", contrast: 2.0 },
+  { width: 1500, mode: "6", contrast: 1.5 },
+  { width: 1900, mode: "11", contrast: 1.8 },
+  { width: 2400, mode: "6", contrast: 2.0 },
+  { width: 2800, mode: "11", contrast: 2.2 },
   { width: 3200, mode: "6", contrast: 2.5 },
-  { width: 3800, mode: "11", contrast: 3.0 },
-  { width: 4500, mode: "6", contrast: 3.5 },
-  { width: 5000, mode: "11", contrast: 4.0 },
+  { width: 3800, mode: "11", contrast: 2.8 },
+  { width: 4200, mode: "6", contrast: 3.2 },
+  { width: 4800, mode: "11", contrast: 3.5 },
+  { width: 5200, mode: "6", contrast: 4.0 },
+  { width: 6000, mode: "11", contrast: 4.5 },
 ];
 
 // the first four digits of an article number are the catalog code
 function sheetCodes(words, width, found) {
   for (const word of words) {
     const text = word.text.trim();
-    
+
     // Skip if outside column
     if (word.bbox.x0 / width > SHEET_COLUMN) {
       continue;
     }
-    
-    // Extract all digits from the recognized text
-    const digits = text.replace(/\D/g, '');
-    
-    // Check if we have at least 4 digits
-    if (digits.length >= 4) {
-      const code = digits.slice(0, 4);
-      
+
+    // Try multiple patterns to extract codes
+    // Pattern 1: Pure 4-digit code (most common)
+    const pureDigits = text.replace(/\D/g, '');
+    if (pureDigits.length >= 4) {
+      const code = pureDigits.slice(0, 4);
       if (hitByCode(code) && !found.includes(code)) {
         found.push(code);
+        continue;
+      }
+    }
+
+    // Pattern 2: Code with letters (e.g., "7093", "S 8000")
+    const letterCode = text.match(/([A-Za-z]?\s*\d{4})/);
+    if (letterCode) {
+      const code = letterCode[1].replace(/\D/g, '').slice(0, 4);
+      if (code.length >= 4 && hitByCode(code) && !found.includes(code)) {
+        found.push(code);
+        continue;
+      }
+    }
+
+    // Pattern 3: Code at beginning of text
+    const startCode = text.match(/^\s*(\d{4})/);
+    if (startCode) {
+      const code = startCode[1];
+      if (hitByCode(code) && !found.includes(code)) {
+        found.push(code);
+        continue;
+      }
+    }
+
+    // Pattern 4: Code anywhere in text with word boundaries
+    const anywhereCode = text.match(/\b(\d{4})\b/);
+    if (anywhereCode) {
+      const code = anywhereCode[1];
+      if (hitByCode(code) && !found.includes(code)) {
+        found.push(code);
+        continue;
       }
     }
   }
@@ -1312,11 +1346,35 @@ function sheetCanvas(bitmap, target, contrast = 1.6) {
   canvas.width = Math.round(bitmap.width * scale);
   canvas.height = Math.round(bitmap.height * scale);
   const context = canvas.getContext("2d");
-  
-  // Enhanced preprocessing with multiple filters
-  context.filter = `grayscale(1) contrast(${contrast}) brightness(1.1) saturate(1.2)`;
+
+  // Draw original image
   context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-  
+
+  // Get image data for advanced preprocessing
+  const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+  const data = imageData.data;
+
+  // Apply contrast and brightness manually for better control
+  for (let i = 0; i < data.length; i += 4) {
+    // Convert to grayscale
+    const gray = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+
+    // Apply contrast
+    const factor = (259 * (contrast * 255 + 255)) / (255 * (259 - contrast * 255));
+    const contrasted = factor * (gray - 128) + 128;
+
+    // Apply brightness
+    const brightened = contrasted + 20;
+
+    // Clamp values
+    data[i] = Math.max(0, Math.min(255, brightened));     // R
+    data[i + 1] = Math.max(0, Math.min(255, brightened)); // G
+    data[i + 2] = Math.max(0, Math.min(255, brightened)); // B
+    // Alpha remains unchanged
+  }
+
+  context.putImageData(imageData, 0, 0);
+
   return canvas;
 }
 
@@ -1335,14 +1393,27 @@ async function readSheet(file) {
     const worker = await getRecogniser();
     await worker.setParameters({ tessedit_char_whitelist: SHEET_CHARS });
     const found = [];
+    let passCount = 0;
+
     for (const pass of SHEET_PASSES) {
+      passCount++;
       const canvas = sheetCanvas(bitmap, pass.width, pass.contrast);
       await worker.setParameters({ tessedit_pageseg_mode: pass.mode });
       const result = await worker.recognize(canvas);
+
+      // Debug: log what Tesseract recognized
+      console.log(`Pass ${passCount}: Recognized ${result.data.words?.length || 0} words`);
+      if (result.data.words && result.data.words.length > 0) {
+        const sampleWords = result.data.words.slice(0, 5).map(w => w.text).join(', ');
+        console.log(`Sample words: ${sampleWords}`);
+      }
+
       sheetCodes(result.data.words || [], canvas.width, found);
+      console.log(`Pass ${passCount}: Found ${found.length} codes so far`);
     }
+
     await worker.setParameters({ tessedit_char_whitelist: "0123456789" });
-    
+
     if (!found.length) {
       sheetStatus(
         "Nu am găsit coduri — sfaturi: fotografiază mai de aproape, asigură-te că poza e clară, cu lumină bună, și că coloana Articol e vizibilă",
