@@ -1294,8 +1294,6 @@ const SHEET_PASSES = [
   { width: 2800, mode: "11", contrast: 2.0 },
   { width: 3200, mode: "6", contrast: 2.5 },
   { width: 3800, mode: "11", contrast: 3.0 },
-  { width: 4500, mode: "6", contrast: 3.5 },
-  { width: 5000, mode: "11", contrast: 4.0 },
 ];
 
 // the first four digits of an article number are the catalog code
@@ -1378,16 +1376,31 @@ async function readSheet(file) {
     sheetStatus("Inițiez scanarea...");
     updateProgress(5);
 
-    for (let i = 0; i < SHEET_PASSES.length; i++) {
-      const pass = SHEET_PASSES[i];
-      const progress = Math.round(((i + 1) / totalPasses) * 100);
-      sheetStatus(`Scanare ${i + 1}/${totalPasses} (${progress}%)…`);
-      updateProgress(progress);
-      const canvas = sheetCanvas(bitmap, pass.width, pass.contrast);
-      await worker.setParameters({ tessedit_pageseg_mode: pass.mode });
-      const result = await worker.recognize(canvas);
-      sheetCodes(result.data.words || [], canvas.width, found);
-      sheetStatus(`Scanare ${i + 1}/${totalPasses} (${progress}%) - Am găsit ${found.length} articole…`);
+    try {
+      for (let i = 0; i < SHEET_PASSES.length; i++) {
+        const pass = SHEET_PASSES[i];
+        const progress = Math.round(((i + 1) / totalPasses) * 100);
+        sheetStatus(`Scanare ${i + 1}/${totalPasses} (${progress}%)…`);
+        updateProgress(progress);
+        
+        const canvas = sheetCanvas(bitmap, pass.width, pass.contrast);
+        await worker.setParameters({ tessedit_pageseg_mode: pass.mode });
+        
+        // Add timeout for each pass to prevent hanging
+        const result = await Promise.race([
+          worker.recognize(canvas),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 30000)) // 30 sec per pass
+        ]);
+        
+        sheetCodes(result.data.words || [], canvas.width, found);
+        sheetStatus(`Scanare ${i + 1}/${totalPasses} (${progress}%) - Am găsit ${found.length} articole…`);
+      }
+    } catch (error) {
+      if (error.message === 'Timeout') {
+        sheetStatus(`Eroare: Scanarea a depășit timeout — imaginea poate fi prea complexă sau coruptă. Încearcă cu o altă poza.`);
+      } else {
+        throw error;
+      }
     }
     
     hideProgress();
