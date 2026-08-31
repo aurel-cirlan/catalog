@@ -1,12 +1,15 @@
 {
-  "name": "Căutare catalog GEALAN 2026",
-"short_name": "AC Catalog",
-  "start_url": "./index.html",
+  "name": "Catalog GEALAN - Căutare rapidă articole",
+  "short_name": "Catalog GEALAN",
+  "description": "Căutare rapidă în catalogul GEALAN - găsește articole, sisteme și componente pentru tâmplărie PVC",
+  "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "background_color": "#111418",
-  "theme_color": "#111418",
+  "theme_color": "#0f1216",
   "orientation": "portrait",
+  "categories": ["business", "utilities", "productivity"],
+  "screenshots": [],
   "icons": [
     {
       "src": "icons/icon-192.png",

@@ -1788,13 +1788,18 @@ if ("serviceWorker" in navigator) {
       showOfflineToast("Catalog pregătit pentru utilizare offline ✓", true);
     }
   });
-  navigator.serviceWorker.register("sw.js").then(
+  navigator.serviceWorker.register("sw.js", {
+    scope: "./"
+  }).then(
     (registration) => {
+      console.log('Service Worker registered with scope:', registration.scope);
       document.addEventListener("visibilitychange", () => {
         if (!document.hidden) registration.update();
       });
     },
-    () => {},
+    (error) => {
+      console.error('Service Worker registration failed:', error);
+    },
   );
   // asks the worker to finish downloading the catalog if a previous
   // attempt was interrupted; near-instant once everything is cached
