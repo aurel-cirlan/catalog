@@ -1281,10 +1281,6 @@ const SHEET_PASSES = [
   { width: 2800, mode: "11", contrast: 2.2 },
   { width: 3200, mode: "6", contrast: 2.5 },
   { width: 3800, mode: "11", contrast: 2.8 },
-  { width: 4200, mode: "6", contrast: 3.2 },
-  { width: 4800, mode: "11", contrast: 3.5 },
-  { width: 5200, mode: "6", contrast: 4.0 },
-  { width: 6000, mode: "11", contrast: 4.5 },
 ];
 
 // the first four digits of an article number are the catalog code
@@ -1387,19 +1383,32 @@ function sheetStatus(text) {
 
 async function readSheet(file) {
   scanning = false;
-  sheetStatus("Citesc dispozi\u021bia\u2026 dureaz\u0103 ~40 de secunde");
+  sheetStatus("Citesc dispozi\u021bia\u2026");
   try {
     const bitmap = await createImageBitmap(file);
     const worker = await getRecogniser();
     await worker.setParameters({ tessedit_char_whitelist: SHEET_CHARS });
     const found = [];
     let passCount = 0;
+    const totalPasses = SHEET_PASSES.length;
+
+    sheetStatus(`Inițiez scanarea (0/${totalPasses})...`);
 
     for (const pass of SHEET_PASSES) {
       passCount++;
+      const progress = Math.round((passCount / totalPasses) * 100);
+      sheetStatus(`Scanare ${passCount}/${totalPasses} (${progress}%)...`);
+
       const canvas = sheetCanvas(bitmap, pass.width, pass.contrast);
       await worker.setParameters({ tessedit_pageseg_mode: pass.mode });
-      const result = await worker.recognize(canvas);
+
+      // Add timeout for each pass to prevent hanging
+      const result = await Promise.race([
+        worker.recognize(canvas),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Timeout la scanare')), 15000)
+        )
+      ]);
 
       // Debug: log what Tesseract recognized
       console.log(`Pass ${passCount}: Recognized ${result.data.words?.length || 0} words`);
@@ -1410,6 +1419,10 @@ async function readSheet(file) {
 
       sheetCodes(result.data.words || [], canvas.width, found);
       console.log(`Pass ${passCount}: Found ${found.length} codes so far`);
+
+      if (found.length > 0) {
+        sheetStatus(`Scanare ${passCount}/${totalPasses} (${progress}%) - Am găsit ${found.length} articole...`);
+      }
     }
 
     await worker.setParameters({ tessedit_char_whitelist: "0123456789" });
@@ -1429,7 +1442,9 @@ async function readSheet(file) {
     render("");
   } catch (error) {
     console.error('Sheet scan error:', error);
-    if (error.name === 'InvalidStateError') {
+    if (error.message === 'Timeout la scanare') {
+      sheetStatus(`Eroare: Scanarea a durat prea mult — încearcă cu o poza mai mică sau mai clară`);
+    } else if (error.name === 'InvalidStateError') {
       sheetStatus(`Eroare: Imaginea nu poate fi decodată — încearcă cu o altă poza (JPG, PNG, WEBP) sau verifică dacă fișierul este corupt`);
     } else {
       sheetStatus(`Eroare: ${error.message || 'Poza nu a putut fi citită'} — încearcă cu o altă poza sau verifică formatul (JPG, PNG)`);
