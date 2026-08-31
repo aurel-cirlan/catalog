@@ -1,0 +1,273 @@
+<!doctype html>
+<!--
+  Catalog GEALAN - cautare rapida articole
+  Copyright (c) 2026 Aurel Cirlan - https://aurelcirlan.ro
+  Toate drepturile rezervate. Copierea, modificarea sau redistribuirea
+  acestui cod fara acordul scris al autorului este interzisa.
+-->
+<html lang="ro">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#0f1216" />
+    <meta name="author" content="Aurel Cîrlan" />
+    <title>Căutare catalog</title>
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="icon" href="icons/icon-192.png" />
+    <link rel="apple-touch-icon" href="icons/icon-192.png" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="bar">
+      <div class="search">
+        <input
+          id="query"
+          type="search"
+          inputmode="numeric"
+          autocomplete="off"
+          enterkeyhint="search"
+          placeholder="Cod sau denumire"
+          aria-label="Caută cod articol"
+        />
+        <button id="clear" type="button" aria-label="Șterge">×</button>
+        <button id="scan" type="button" aria-label="Scanează cu camera">
+          📷
+        </button>
+        <button id="theme" type="button" aria-label="Schimbă tema">☀</button>
+        <button id="lang" type="button" aria-label="Schimbă limba">🌐</button>
+        <button id="help" type="button" aria-label="Cum se folosește">?</button>
+      </div>
+      <div id="suggestions" class="suggestions" hidden></div>
+      <p id="status" class="status">Se încarcă catalogul…</p>
+      <div id="progress-bar" class="progress-bar" hidden>
+        <div id="progress-bar-fill" class="progress-bar-fill"></div>
+      </div>
+    </header>
+
+    <main>
+      <section class="chips">
+        <div class="chipRow">
+          <button id="sheetScan" type="button">📄 Scanează dispoziția</button>
+        </div>
+        <input id="sheetFile" type="file" accept="image/*" hidden />
+        <p id="sheetStatus" class="status" hidden></p>
+      </section>
+      <section id="shared" class="chips" hidden>
+        <h2>
+          <span id="sharedTitle">Listă primită</span>
+          <button id="sharedSave" type="button" class="link">
+            salvează la mine
+          </button>
+          <button id="sharedClose" type="button" class="link">închide</button>
+        </h2>
+      </section>
+      <section id="recent" class="chips" hidden>
+        <h2>
+          Ultimul articol deschis
+          <button id="recentClear" type="button" class="link">șterge</button>
+        </h2>
+        <div id="recentList" class="chipRow"></div>
+      </section>
+      <section id="favourites" class="chips" hidden>
+        <h2>
+          Favorite
+          <button id="favouriteClear" type="button" class="link">
+            golește
+          </button>
+        </h2>
+        <div id="favouriteList" class="chipRow"></div>
+      </section>
+      <section id="history" class="chips" hidden>
+        <h2>
+          Căutări recente
+          <button id="historyClear" type="button" class="link">golește</button>
+        </h2>
+        <div id="historyList" class="chipRow"></div>
+      </section>
+      <section id="worklist" class="chips" hidden>
+        <h2>
+          <span id="worklistTitle">Listă de lucru</span>
+          <button id="worklistSend" type="button" class="link">trimite</button>
+          <button id="worklistNew" type="button" class="link">
+            listă nouă
+          </button>
+          <button id="worklistDrop" type="button" class="link">șterge</button>
+          <button id="worklistClear" type="button" class="link">golește</button>
+        </h2>
+        <div id="listNames" class="chipRow sub"></div>
+        <div id="worklistItems" class="chipRow"></div>
+      </section>
+      <section id="depths" class="chips" hidden>
+        <h2>Adâncime constructivă</h2>
+        <div id="depthList" class="chipRow"></div>
+      </section>
+      <section id="sections" class="chips" hidden>
+        <h2>Categorii</h2>
+        <div id="groupList" class="chipRow"></div>
+        <div id="sectionList" class="chipRow sub" hidden></div>
+      </section>
+      <ul id="results" class="results"></ul>
+    </main>
+
+    <footer class="credit">
+  Creat de Aurel Cîrlan ·
+  <a href="https://aurelcirlan.ro" target="_blank" rel="noopener">aurelcirlan.ro</a>
+  <small>Aplicație independentă și gratuită, fără afiliere oficială cu GEALAN. GEALAN® și conținutul catalogului sunt proprietatea GEALAN Fenster-Systeme GmbH și sunt folosite exclusiv în scop informativ, pentru partenerii din industria tâmplăriei PVC.</small>
+  <small>© Aurel Cîrlan · folosiți-o liber, codul rămâne al autorului</small>
+</footer>
+
+    <dialog id="viewer" class="viewer">
+      <div class="viewerBar">
+        <button id="close" type="button">Înapoi</button>
+        <span id="viewerTitle"></span>
+        <button id="share" type="button" aria-label="Trimite">⤴</button>
+        <button id="sharePage" type="button" aria-label="Trimite pagina">
+          📄
+        </button>
+        <button id="favourite" type="button" aria-label="Favorit">☆</button>
+      </div>
+      <div id="neighbours" class="chipRow neighbours" hidden></div>
+      <div class="viewerBar tools">
+        <button id="addList" type="button">＋ Listă</button>
+        <button id="compareAdd" type="button">⇄ Compară</button>
+        <button id="printPage" type="button">🖨 Printează</button>
+      </div>
+      <input
+        id="note"
+        class="note"
+        type="text"
+        autocomplete="off"
+        placeholder="Notă proprie (ex. stoc hala 2)"
+        aria-label="Notă proprie"
+      />
+      <div id="stage" class="stage">
+        <div id="canvas" class="canvas">
+          <img id="pageImage" alt="" />
+          <div class="watermark" aria-hidden="true">aurelcirlan.ro</div>
+          <div id="marker" class="marker"></div>
+        </div>
+      </div>
+      <div class="viewerBar">
+        <button id="zoomOut" type="button">−</button>
+        <button id="fit" type="button">Toată pagina</button>
+        <button id="zoomMode" type="button">🔎 Articol</button>
+        <button id="zoomIn" type="button">+</button>
+      </div>
+    </dialog>
+
+    <dialog id="compare" class="viewer">
+      <div class="viewerBar">
+        <button id="compareClose" type="button">Înapoi</button>
+        <span>Comparare</span>
+        <button id="compareReset" type="button">Golește</button>
+      </div>
+      <div id="compareBody" class="compareBody"></div>
+    </dialog>
+
+    <dialog id="guide" class="guide">
+      <h3>Cum se folosește</h3>
+      <ul>
+        <li>
+          Scrie codul (ex. 7093), denumirea în română sau germană, ori sistemul
+          (S 8000).
+        </li>
+        <li>📷 scanează codul cu camera telefonului.</li>
+        <li>
+          📄 din camera, butonul „Dispoziție” fotografiază foaia de comandă și
+          îți scoate lista cu toate articolele găsite.
+        </li>
+        <li>Apeși pe rezultat și vezi desenul și pagina din catalog.</li>
+        <li>Categoriile sunt grupate: sisteme, componente, glisante.</li>
+        <li>＋ din dreapta rezultatului adaugă articolul în lista de lucru.</li>
+        <li>
+          Când trimiți lista, cine primește linkul vede articolele cu desene.
+        </li>
+        <li>
+          Poți avea mai multe liste cu nume („listă nouă"), ex. pe șantiere.
+        </li>
+        <li>
+          În pagina articolului: notă proprie, listă de lucru, comparare, print.
+        </li>
+      </ul>
+      <button id="guideTut" type="button" class="ghost">
+        ▶ Vezi tutoriale
+      </button>
+      <button id="backupSave" type="button" class="ghost">
+        ⬇ Salvează lista și notele
+      </button>
+      <button id="backupLoad" type="button" class="ghost">
+        ⬆ Încarcă lista și notele
+      </button>
+      <input id="backupFile" type="file" accept="application/json" hidden />
+      <button id="feedback" type="button" class="ghost">
+        ✉ Trimite părerea ta
+      </button>
+      <button id="guideClose" type="button" class="primary">Am înțeles</button>
+    </dialog>
+
+    <dialog id="feedbackBox" class="guide">
+      <h3>Trimite părerea ta</h3>
+      <p>Scrie-i lui Aurel ce lipsește sau ce nu merge:</p>
+      <a
+        class="ghost"
+        id="feedbackWhatsapp"
+        href="https://wa.me/40732292535?text=Feedback%20catalog%20GEALAN%3A%20"
+        target="_blank"
+        rel="noopener"
+        >💬 WhatsApp 0732 292 535</a
+      >
+      <a
+        class="ghost"
+        href="mailto:aurel.cirlan@outlook.com?subject=Feedback%20catalog%20GEALAN"
+        >✉ aurel.cirlan@outlook.com</a
+      >
+      <a
+        class="ghost"
+        href="https://aurelcirlan.ro"
+        target="_blank"
+        rel="noopener"
+        >🌐 aurelcirlan.ro</a
+      >
+      <button id="feedbackClose" type="button" class="primary">Înapoi</button>
+    </dialog>
+
+    <dialog id="tutorials" class="viewer">
+      <div class="viewerBar">
+        <button id="tutClose" type="button">Înapoi</button>
+        <span>Tutoriale</span>
+      </div>
+      <div id="tutList" class="chipRow tutList"></div>
+      <div class="tutStage">
+        <p id="tutText" class="tutText"></p>
+        <img id="tutImage" alt="" />
+      </div>
+    </dialog>
+
+    <div id="printArea" class="printArea" aria-hidden="true">
+      <img id="printImage" alt="" />
+    </div>
+
+    <dialog id="scanner" class="scanner">
+      <div class="viewerBar">
+        <button id="scanClose" type="button">Înapoi</button>
+        <span id="scanStatus">Apropie codul de chenar</span>
+      </div>
+      <div class="scanStage">
+        <video id="scanVideo" playsinline muted></video>
+        <div class="scanFrame"></div>
+      </div>
+      <div class="viewerBar">
+        <button id="scanTorch" type="button" hidden>💡 Lumină</button>
+        <button id="scanSheet" type="button">📄 Dispoziție</button>
+        <button id="scanShot" type="button" class="primary">
+          Citește acum
+        </button>
+      </div>
+    </dialog>
+
+    <script src="app.js" type="module"></script>
+  </body>
+</html>

@@ -1,0 +1,808 @@
+/*!
+ * Catalog GEALAN - cautare rapida articole
+ * Copyright (c) 2026 Aurel Cirlan - https://aurelcirlan.ro
+ * Toate drepturile rezervate. Copierea, modificarea sau redistribuirea
+ * acestui cod fara acordul scris al autorului este interzisa.
+ */
+:root {
+  --bg: #0f1216;
+  --panel: #191f27;
+  --raised: #212936;
+  --line: #2b323c;
+  --text: #f2f5f8;
+  --muted: #98a4b3;
+  --accent: #ffb020;
+  --accent-soft: rgba(255, 176, 32, 0.16);
+  --shade: rgba(0, 0, 0, 0.35);
+  --lift: 0 6px 18px rgba(0, 0, 0, 0.35);
+  color-scheme: dark;
+}
+
+:root[data-theme="light"] {
+  --bg: #eef1f5;
+  --panel: #ffffff;
+  --raised: #f7f9fb;
+  --line: #dbe1e8;
+  --text: #10151b;
+  --muted: #5c6874;
+  --accent: #d97706;
+  --accent-soft: rgba(217, 119, 6, 0.12);
+  --shade: rgba(255, 255, 255, 0.45);
+  --lift: 0 6px 16px rgba(15, 23, 42, 0.1);
+  color-scheme: light;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--bg);
+}
+
+/* the catalog cover, blurred, as a quiet backdrop */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background: url("cover.webp") center / cover no-repeat;
+  opacity: 0.38;
+  pointer-events: none;
+}
+
+:root[data-theme="light"] body::before {
+  opacity: 0.3;
+}
+
+body {
+  margin: 0;
+  background: transparent;
+  color: var(--text);
+  font:
+    16px/1.4 system-ui,
+    -apple-system,
+    "Segoe UI",
+    sans-serif;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.bar {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: color-mix(in srgb, var(--bg) 82%, transparent);
+  backdrop-filter: blur(12px);
+  padding: calc(12px + env(safe-area-inset-top)) 14px 8px;
+  border-bottom: 1px solid var(--line);
+}
+
+.search {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 0 6px 0 14px;
+  box-shadow: var(--lift);
+  transition: border-color 0.15s ease;
+  position: relative;
+}
+
+.search:focus-within {
+  border-color: var(--accent);
+}
+
+.search input {
+  flex: 1;
+  /* without this the field keeps its default width and pushes the buttons off screen */
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font-size: 20px;
+  padding: 14px 0;
+  outline: none;
+}
+
+.search button {
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 24px;
+  line-height: 1;
+  padding: 10px;
+  border-radius: 12px;
+  transition: background 0.15s ease;
+}
+
+.search button:active {
+  background: var(--accent-soft);
+}
+
+.status {
+  margin: 8px 2px 4px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.progress-bar {
+  margin: 8px 2px 4px;
+  height: 4px;
+  background: var(--line);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.3s ease;
+  width: 0%;
+}
+
+.chips {
+  padding: 8px 12px 0;
+}
+
+.chips h2 {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  margin: 8px 0;
+}
+
+.chipRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chipRow button {
+  background: var(--raised);
+  border: 1px solid var(--line);
+  color: var(--text);
+  border-radius: 999px;
+  padding: 9px 16px;
+  font-size: 15px;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.chipRow button:active,
+.chipRow button.on {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+}
+
+.chipRow button.on {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.chipRow.sub {
+  margin-top: 8px;
+  padding-left: 10px;
+  border-left: 2px solid var(--line);
+}
+
+.chipRow.sub button {
+  font-size: 14px;
+  padding: 7px 13px;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+.chips h2 .link {
+  background: none;
+  border: 0;
+  color: var(--accent);
+  font: inherit;
+  text-transform: none;
+  letter-spacing: 0;
+  margin-left: 8px;
+}
+
+/* other articles on the same catalog page, scrolled sideways above the page */
+.neighbours {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  gap: 6px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.neighbours button {
+  flex: none;
+  padding: 6px 12px;
+  font-size: 14px;
+}
+
+.results {
+  list-style: none;
+  margin: 0;
+  padding: 8px 12px 24px;
+  display: grid;
+  gap: 10px;
+}
+
+.results li {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.listToggle {
+  flex: none;
+  width: 46px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--panel);
+  color: var(--text);
+  font-size: 20px;
+  box-shadow: var(--lift);
+}
+
+.listToggle.on {
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.card {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  width: 100%;
+  text-align: left;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 12px;
+  color: inherit;
+  box-shadow: var(--lift);
+  transition:
+    transform 0.12s ease,
+    border-color 0.15s ease;
+}
+
+.card:active {
+  transform: scale(0.985);
+  border-color: var(--accent);
+}
+
+.card img {
+  width: 116px;
+  height: 88px;
+  object-fit: contain;
+  background: #fff;
+  border-radius: 12px;
+  padding: 4px;
+  flex: none;
+}
+
+.card .code {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.card .meta {
+  color: var(--muted);
+  font-size: 13px;
+  margin-top: 2px;
+}
+
+.card .page {
+  margin-left: auto;
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-radius: 999px;
+  padding: 5px 10px;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.card .cardNote {
+  color: var(--accent);
+  font-size: 13px;
+  margin-top: 4px;
+}
+
+.empty {
+  display: block;
+  color: var(--muted);
+  padding: 24px 4px;
+  text-align: center;
+}
+
+.viewerBar.tools button {
+  flex: 1;
+  padding: 11px 8px;
+  font-size: 15px;
+}
+
+.note {
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--text);
+  font-size: 16px;
+  padding: 12px 14px;
+  outline: none;
+}
+
+.note:focus {
+  border-bottom-color: var(--accent);
+}
+
+.compareBody {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  padding: 12px;
+  overflow: auto;
+}
+
+.comparePane {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 10px;
+  text-align: center;
+}
+
+.comparePane img {
+  width: 100%;
+  height: 46vh;
+  object-fit: contain;
+  background: #fff;
+  border-radius: 12px;
+  padding: 6px;
+}
+
+.comparePane .code {
+  font-size: 20px;
+  font-weight: 700;
+  margin-top: 8px;
+}
+
+.comparePane .meta {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.guide {
+  border: 0;
+  border-radius: 18px;
+  background: var(--panel);
+  color: var(--text);
+  max-width: 340px;
+  padding: 18px;
+  box-shadow: var(--lift);
+}
+
+.guide::backdrop {
+  background: rgba(0, 0, 0, 0.6);
+}
+
+.guide h3 {
+  margin: 0 0 10px;
+}
+
+.guide ul {
+  margin: 0 0 16px;
+  padding-left: 18px;
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.guide button {
+  width: 100%;
+  border: 0;
+  border-radius: 12px;
+  background: var(--accent);
+  color: #10151b;
+  font-size: 16px;
+  font-weight: 600;
+  padding: 12px;
+}
+
+.guide button.ghost,
+.guide a.ghost {
+  background: var(--raised);
+  color: var(--text);
+  border: 1px solid var(--line);
+  margin-bottom: 8px;
+}
+
+.guide a.ghost {
+  display: block;
+  border-radius: 12px;
+  padding: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  text-align: center;
+  text-decoration: none;
+}
+
+.guide p {
+  margin: 0 0 12px;
+  color: var(--muted);
+  font-size: 15px;
+}
+
+.tutList {
+  padding: 10px 12px 0;
+}
+
+.tutStage {
+  flex: 1;
+  overflow: auto;
+  padding: 10px 12px calc(16px + env(safe-area-inset-bottom));
+  text-align: center;
+}
+
+.tutText {
+  color: var(--muted);
+  font-size: 14px;
+  margin: 6px 0 10px;
+  text-align: left;
+}
+
+.tutStage img {
+  width: 100%;
+  max-width: 360px;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+}
+
+.printArea {
+  display: none;
+}
+
+@media print {
+  body > *:not(.printArea) {
+    display: none !important;
+  }
+
+  body::before {
+    display: none;
+  }
+
+  .printArea {
+    display: block;
+  }
+
+  .printArea img {
+    width: 100%;
+  }
+}
+
+.viewer {
+  width: 100%;
+  max-width: none;
+  height: 100%;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.viewer::backdrop {
+  background: #000;
+}
+
+.viewer[open] {
+  display: flex;
+  flex-direction: column;
+}
+
+.viewerBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line);
+  font-size: 14px;
+}
+
+.viewerBar:last-child {
+  border-bottom: 0;
+  border-top: 1px solid var(--line);
+  padding-bottom: calc(10px + env(safe-area-inset-bottom));
+}
+
+.viewerBar button {
+  background: var(--raised);
+  border: 1px solid var(--line);
+  color: var(--text);
+  border-radius: 12px;
+  padding: 11px 16px;
+  font-size: 16px;
+}
+
+.viewerBar button:active {
+  background: var(--accent-soft);
+}
+
+.viewerBar span {
+  flex: 1;
+  text-align: center;
+  color: var(--text);
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stage {
+  flex: 1;
+  overflow: auto;
+  background: var(--bg);
+  -webkit-overflow-scrolling: touch;
+}
+
+.canvas {
+  position: relative;
+  width: max-content;
+  overflow: hidden;
+}
+
+.canvas img {
+  display: block;
+  background: #fff;
+}
+
+/* discreet ownership mark over the catalog page */
+.watermark {
+  position: absolute;
+  inset: -30%;
+  transform: rotate(-30deg);
+  color: #111418;
+  opacity: 0.07;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 3.2;
+  word-spacing: 26px;
+  overflow: hidden;
+  pointer-events: none;
+  user-select: none;
+}
+
+.marker {
+  position: absolute;
+  border: 3px solid var(--accent);
+  border-radius: 6px;
+  box-shadow: 0 0 0 9999px var(--shade);
+  pointer-events: none;
+  animation: pulse 1.6s ease-in-out 3;
+}
+
+@keyframes pulse {
+  50% {
+    border-color: transparent;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+.credit {
+  padding: 18px 16px calc(18px + env(safe-area-inset-bottom));
+  text-align: center;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.credit a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.credit small {
+  display: block;
+  margin-top: 6px;
+  font-size: 11px;
+  opacity: 0.75;
+}
+
+.viewerBar button.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #111418;
+  font-weight: 600;
+  flex: 1;
+}
+
+.scanner {
+  width: 100%;
+  max-width: none;
+  height: 100%;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.scanner[open] {
+  display: flex;
+  flex-direction: column;
+}
+
+.scanStage {
+  position: relative;
+  flex: 1;
+  overflow: hidden;
+  background: #000;
+}
+
+.scanStage video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.scanFrame {
+  position: absolute;
+  left: 12%;
+  right: 12%;
+  top: 35%;
+  height: 30%;
+  border: 3px solid var(--accent);
+  border-radius: 12px;
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.25);
+  pointer-events: none;
+}
+/* Animații subtile */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.results li {
+  animation: fadeIn 0.3s ease-out;
+}
+
+.results li:nth-child(1) { animation-delay: 0s; }
+.results li:nth-child(2) { animation-delay: 0.05s; }
+.results li:nth-child(3) { animation-delay: 0.1s; }
+.results li:nth-child(4) { animation-delay: 0.15s; }
+.results li:nth-child(5) { animation-delay: 0.2s; }
+.results li:nth-child(6) { animation-delay: 0.25s; }
+
+.chipRow button {
+  transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+}
+
+.chipRow button:hover {
+  transform: translateY(-2px);
+}
+
+.card {
+  transition: transform 0.12s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.card:hover {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+/* Footer lizibil pe orice fundal și în orice temă */
+footer.credit {
+  background: rgba(8, 15, 25, 0.78);
+  color: #e6edf3;
+  padding: 12px 16px;
+  border-radius: 10px;
+  margin: 18px auto 10px;
+  max-width: 720px;
+  backdrop-filter: blur(4px);
+}
+footer.credit small {
+  color: #b9c6d2;
+  display: block;
+  margin-top: 4px;
+}
+/* small banner reporting the background download that makes offline use possible */
+.offlineToast {
+  position: fixed;
+  left: 50%;
+  bottom: 18px;
+  transform: translate(-50%, 12px);
+  z-index: 50;
+  background: var(--raised);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 8px 16px;
+  font-size: 13px;
+  box-shadow: var(--lift);
+  opacity: 0;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+  pointer-events: none;
+  max-width: calc(100vw - 32px);
+  text-align: center;
+}
+
+.offlineToast.shown {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+/* Sugestii de căutare */
+.suggestions {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  max-height: 300px;
+  overflow-y: auto;
+  box-shadow: var(--lift);
+  z-index: 10;
+}
+
+.suggestionItem {
+  padding: 10px 14px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--line);
+  transition: background 0.15s ease;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.suggestionItem:last-child {
+  border-bottom: none;
+}
+
+.suggestionItem:hover {
+  background: var(--accent-soft);
+}
+
+.suggestionItem.active {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+}
+
+.suggestionCode {
+  font-weight: 600;
+  color: var(--accent);
+  min-width: 60px;
+}
+
+.suggestionName {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+/* Language button styling */
+#lang {
+  font-size: 14px;
+  font-weight: 600;
+  min-width: 28px;
+}
+/* test robot */
