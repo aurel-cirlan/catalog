@@ -25,6 +25,10 @@ const SHELL = [
   "./favicon.ico",
   "./favicon.png",
   "./apple-touch-icon.png",
+  "./browserconfig.xml",
+  "./robots.txt",
+  "./sitemap.xml",
+  "./llms.txt",
   "./data/index.json",
   "./data/old/index.json",
 ];

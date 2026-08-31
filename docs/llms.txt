@@ -15,14 +15,15 @@ Catalog GEALAN este o aplicație web pentru căutare rapidă în catalogul GEALA
 
 ## Developer
 Aurel Cîrlan
-- Website: https://aurelcirlan.ro
-- Email: aurel.cirlan@outlook.com
-- WhatsApp: 0732 292 535
+- Website: [https://aurelcirlan.ro](https://aurelcirlan.ro)
+- Email: [aurel.cirlan@outlook.com](mailto:aurel.cirlan@outlook.com)
+- WhatsApp: [0732 292 535](https://wa.me/40732292535)
 
 ## Links importante
-- Aplicație principală: https://catalog.aurelcirlan.ro/
-- Website developer: https://aurelcirlan.ro
-- Repo GitHub: (dacă există)
+- [Aplicație principală](https://catalog.aurelcirlan.ro/)
+- [Website developer](https://aurelcirlan.ro)
+- [Sitemap](https://catalog.aurelcirlan.ro/sitemap.xml)
+- [Robots.txt](https://catalog.aurelcirlan.ro/robots.txt)
 
 ## Tehnologii
 - Vanilla JavaScript
