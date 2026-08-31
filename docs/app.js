@@ -1200,6 +1200,12 @@ function centredCode(words, canvas) {
 }
 
 async function openScanner() {
+  // Check if offline - scanning requires online mode
+  if (!navigator.onLine) {
+    alert("Scanning funcționează doar online în browser. Te rog să te conectezi la internet și să folosești aplicația din browser, nu din aplicația descărcată.");
+    return;
+  }
+
   try {
     stream = await navigator.mediaDevices.getUserMedia({
       video: {
@@ -1342,8 +1348,14 @@ function sheetStatus(text) {
 }
 
 async function readSheet(file) {
+  // Check if offline - scanning requires online mode
+  if (!navigator.onLine) {
+    sheetStatus("Eroare: Scanning funcționează doar online în browser. Te rog să te conectezi la internet.");
+    return;
+  }
+
   scanning = false;
-  sheetStatus("Citesc dispozi\u021bia\u2026 dureaz\u0103 ~60 de secunde");
+  sheetStatus("Citesc dispozi\u021bia\u2026 dureaz\u0103 ~40 de secunde");
   try {
     // Validate file
     if (!file) {
@@ -1356,16 +1368,57 @@ async function readSheet(file) {
       return;
     }
 
-    if (!file.type.startsWith('image/')) {
+    // Check if file is an image by both MIME type and extension
+    const fileExt = file.name.split('.').pop().toLowerCase();
+    const imageExts = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'heic', 'heif', 'tiff', 'bmp'];
+    
+    if (!file.type.startsWith('image/') && !imageExts.includes(fileExt)) {
       sheetStatus("Eroare: Fișierul nu este o imagine (selectează JPG, PNG, WEBP)");
       return;
     }
 
     // Check for supported image types
     const supportedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
-    if (!supportedTypes.includes(file.type)) {
-      sheetStatus(`Eroare: Format ${file.type} nu este suportat (folosește JPG, PNG, WEBP)`);
-      return;
+    const supportedExts = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
+    
+    // If format is not supported, try to convert it
+    if (!supportedTypes.includes(file.type) && !supportedExts.includes(fileExt)) {
+      sheetStatus("Convertesc imaginea la format compatibil...");
+      try {
+        // Try to load the image and convert to PNG
+        const img = new Image();
+        const url = URL.createObjectURL(file);
+        
+        await new Promise((resolve, reject) => {
+          img.onload = resolve;
+          img.onerror = reject;
+          img.src = url;
+        });
+        
+        // Create canvas and convert to PNG
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0);
+        
+        // Convert to blob
+        const pngBlob = await new Promise(resolve => {
+          canvas.toBlob(resolve, 'image/png');
+        });
+        
+        URL.revokeObjectURL(url);
+        
+        // Use the converted blob
+        file = new File([pngBlob], file.name.replace(/\.[^.]+$/, '.png'), {
+          type: 'image/png'
+        });
+        
+        sheetStatus("Imagine convertită cu succes!");
+      } catch (convError) {
+        sheetStatus(`Eroare: Format ${fileExt} nu este suportat și nu poate fi convertit (folosește JPG, PNG, WEBP)`);
+        return;
+      }
     }
 
     const bitmap = await createImageBitmap(file);
