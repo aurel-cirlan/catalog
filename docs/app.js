@@ -70,8 +70,6 @@ const els = {
   sheetFile: document.getElementById("sheetFile"),
   sheetStatus: document.getElementById("sheetStatus"),
   scanStatus: document.getElementById("scanStatus"),
-  progressBar: document.getElementById("progress-bar"),
-  progressBarFill: document.getElementById("progress-bar-fill"),
   viewer: document.getElementById("viewer"),
   viewerTitle: document.getElementById("viewerTitle"),
   stage: document.getElementById("stage"),
@@ -1200,12 +1198,6 @@ function centredCode(words, canvas) {
 }
 
 async function openScanner() {
-  // Check if offline - scanning requires online mode
-  if (!navigator.onLine) {
-    alert("Scanning funcționează doar online în browser. Te rog să te conectezi la internet și să folosești aplicația din browser, nu din aplicația descărcată.");
-    return;
-  }
-
   try {
     stream = await navigator.mediaDevices.getUserMedia({
       video: {
@@ -1260,19 +1252,6 @@ function useCode(code) {
   render(code);
 }
 
-function updateProgress(progress) {
-  if (els.progressBar && els.progressBarFill) {
-    els.progressBar.hidden = false;
-    els.progressBarFill.style.width = `${progress}%`;
-  }
-}
-
-function hideProgress() {
-  if (els.progressBar) {
-    els.progressBar.hidden = true;
-  }
-}
-
 // one pass over the current frame; alternates crop and layout mode each round
 async function readFrame(round) {
   const worker = await getRecogniser();
@@ -1282,10 +1261,9 @@ async function readFrame(round) {
   });
   const result = await worker.recognize(canvas);
   const words = result.data.words || [];
-  return {
-    code: centredCode(words, canvas),
-    seen: words.flatMap((word) => word.text.match(CODE_RE) || [])[0],
-  };
+  const code = centredCode(words, canvas);
+  const seen = words.flatMap((word) => word.text.match(CODE_RE) || [])[0];
+  return { code, seen };
 }
 
 // article numbers on a picking list: extract first 4 digits (GEALAN catalog code)
@@ -1300,6 +1278,8 @@ const SHEET_PASSES = [
   { width: 2800, mode: "11", contrast: 2.0 },
   { width: 3200, mode: "6", contrast: 2.5 },
   { width: 3800, mode: "11", contrast: 3.0 },
+  { width: 4500, mode: "6", contrast: 3.5 },
+  { width: 5000, mode: "11", contrast: 4.0 },
 ];
 
 // the first four digits of an article number are the catalog code
@@ -1348,116 +1328,19 @@ function sheetStatus(text) {
 }
 
 async function readSheet(file) {
-  // Check if offline - scanning requires online mode
-  if (!navigator.onLine) {
-    sheetStatus("Eroare: Scanning funcționează doar online în browser. Te rog să te conectezi la internet.");
-    return;
-  }
-
   scanning = false;
   sheetStatus("Citesc dispozi\u021bia\u2026 dureaz\u0103 ~40 de secunde");
   try {
-    // Validate file
-    if (!file) {
-      sheetStatus("Eroare: Niciun fișier selectat");
-      return;
-    }
-
-    if (file.size > 10 * 1024 * 1024) { // 10MB limit
-      sheetStatus("Eroare: Poza e prea mare (max 10MB)");
-      return;
-    }
-
-    // Check if file is an image by both MIME type and extension
-    const fileExt = file.name.split('.').pop().toLowerCase();
-    const imageExts = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'heic', 'heif', 'tiff', 'bmp'];
-    
-    if (!file.type.startsWith('image/') && !imageExts.includes(fileExt)) {
-      sheetStatus("Eroare: Fișierul nu este o imagine (selectează JPG, PNG, WEBP)");
-      return;
-    }
-
-    // Check for supported image types
-    const supportedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
-    const supportedExts = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
-    
-    // If format is not supported, try to convert it
-    if (!supportedTypes.includes(file.type) && !supportedExts.includes(fileExt)) {
-      sheetStatus("Convertesc imaginea la format compatibil...");
-      try {
-        // Try to load the image and convert to PNG
-        const img = new Image();
-        const url = URL.createObjectURL(file);
-        
-        await new Promise((resolve, reject) => {
-          img.onload = resolve;
-          img.onerror = reject;
-          img.src = url;
-        });
-        
-        // Create canvas and convert to PNG
-        const canvas = document.createElement('canvas');
-        canvas.width = img.width;
-        canvas.height = img.height;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0);
-        
-        // Convert to blob
-        const pngBlob = await new Promise(resolve => {
-          canvas.toBlob(resolve, 'image/png');
-        });
-        
-        URL.revokeObjectURL(url);
-        
-        // Use the converted blob
-        file = new File([pngBlob], file.name.replace(/\.[^.]+$/, '.png'), {
-          type: 'image/png'
-        });
-        
-        sheetStatus("Imagine convertită cu succes!");
-      } catch (convError) {
-        sheetStatus(`Eroare: Format ${fileExt} nu este suportat și nu poate fi convertit (folosește JPG, PNG, WEBP)`);
-        return;
-      }
-    }
-
     const bitmap = await createImageBitmap(file);
     const worker = await getRecogniser();
     await worker.setParameters({ tessedit_char_whitelist: SHEET_CHARS });
     const found = [];
-    const totalPasses = SHEET_PASSES.length;
-    sheetStatus("Inițiez scanarea...");
-    updateProgress(5);
-
-    try {
-      for (let i = 0; i < SHEET_PASSES.length; i++) {
-        const pass = SHEET_PASSES[i];
-        const progress = Math.round(((i + 1) / totalPasses) * 100);
-        sheetStatus(`Scanare ${i + 1}/${totalPasses} (${progress}%)…`);
-        updateProgress(progress);
-        
-        const canvas = sheetCanvas(bitmap, pass.width, pass.contrast);
-        await worker.setParameters({ tessedit_pageseg_mode: pass.mode });
-        
-        // Add timeout for each pass to prevent hanging
-        const result = await Promise.race([
-          worker.recognize(canvas),
-          new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 30000)) // 30 sec per pass
-        ]);
-        
-        sheetCodes(result.data.words || [], canvas.width, found);
-        sheetStatus(`Scanare ${i + 1}/${totalPasses} (${progress}%) - Am găsit ${found.length} articole…`);
-      }
-    } catch (error) {
-      if (error.message === 'Timeout') {
-        sheetStatus(`Eroare: Scanarea a depășit timeout — imaginea poate fi prea complexă sau coruptă. Încearcă cu o altă poza.`);
-      } else {
-        throw error;
-      }
+    for (const pass of SHEET_PASSES) {
+      const canvas = sheetCanvas(bitmap, pass.width, pass.contrast);
+      await worker.setParameters({ tessedit_pageseg_mode: pass.mode });
+      const result = await worker.recognize(canvas);
+      sheetCodes(result.data.words || [], canvas.width, found);
     }
-    
-    hideProgress();
-    
     await worker.setParameters({ tessedit_char_whitelist: "0123456789" });
     
     if (!found.length) {
@@ -1488,31 +1371,26 @@ async function scanLoop() {
   if (scanning || !stream) return;
   scanning = true;
   els.scanStatus.textContent = "Inițiez camera...";
-  updateProgress(10);
   await new Promise((resolve) => setTimeout(resolve, 500));
-  
+
   for (let round = 0; scanning; round += 1) {
     if (!els.scanVideo.videoWidth) {
       await new Promise((resolve) => setTimeout(resolve, 200));
       continue;
     }
     try {
-      const { code, seen } = await readFrame(round);
+      const result = await readFrame(round);
       if (!scanning) return;
-      if (code) {
-        useCode(code);
-        hideProgress();
+      if (result.code) {
+        useCode(result.code);
         return;
       }
-      const progress = Math.min(10 + (round * 5), 90);
-      updateProgress(progress);
-      els.scanStatus.textContent = seen
-        ? `Am citit ${seen}, dar nu e în catalog (încercare ${round + 1})`
+      els.scanStatus.textContent = result.seen
+        ? `Am citit ${result.seen}, dar nu e în catalog (încercare ${round + 1})`
         : `Caut codul… (încercare ${round + 1}) ține telefonul nemișcat`;
     } catch (error) {
       console.error('Scan loop error:', error);
       els.scanStatus.textContent = `Eroare: ${error.message || 'Scanarea nu a putut porni'} — verifică permisiunile pentru camera`;
-      hideProgress();
       return;
     }
   }
