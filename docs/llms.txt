@@ -1,0 +1,36 @@
+# Catalog GEALAN - Căutare rapidă articole
+
+## Descriere
+Catalog GEALAN este o aplicație web pentru căutare rapidă în catalogul GEALAN. Oferă funcționalități de căutare după cod sau denumire, scanning OCR cu camera telefonului, și vizualizarea desenelor din catalog.
+
+## Funcționalități principale
+- Căutare rapidă după cod articol sau denumire (română/germană)
+- Scanning OCR cu camera telefonului pentru citirea codurilor
+- Scanning dispoziții (foi de comandă) pentru extragerea automată a articolelor
+- Vizualizarea desenelor și paginilor din catalog
+- Liste de lucru multiple pentru organizare pe șantiere
+- Comparare între articole
+- Export și partajare listelor
+- Suport offline complet (PWA)
+
+## Developer
+Aurel Cîrlan
+- Website: https://aurelcirlan.ro
+- Email: aurel.cirlan@outlook.com
+- WhatsApp: 0732 292 535
+
+## Links importante
+- Aplicație principală: https://catalog.aurelcirlan.ro/
+- Website developer: https://aurelcirlan.ro
+- Repo GitHub: (dacă există)
+
+## Tehnologii
+- Vanilla JavaScript
+- Service Worker pentru caching offline
+- Tesseract.js pentru OCR
+- PWA (Progressive Web App)
+
+## Licență
+Aplicație independentă și gratuită, fără afiliere oficială cu GEALAN. GEALAN® și conținutul catalogului sunt proprietatea GEALAN Fenster-Systeme GmbH și sunt folosite exclusiv în scop informativ, pentru partenerii din industria tâmplăriei PVC.
+
+Copyright (c) 2026 Aurel Cîrlan - Toate drepturile rezervate.
