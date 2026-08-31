@@ -7,7 +7,7 @@
 
 // The shell (markup/code) is small and changes with every release, so it
 // lives in its own versioned cache that gets replaced on update.
-const SHELL_CACHE = "catalog-shell-e3a823f0";
+const SHELL_CACHE = "catalog-shell-d71f6f3d";
 // The catalog itself (page scans, article drawings, OCR assets) is large
 // and does not change between releases, so it lives in a separate cache
 // that survives shell updates. Bump this only if the dataset itself is
