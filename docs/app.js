@@ -70,6 +70,8 @@ const els = {
   sheetFile: document.getElementById("sheetFile"),
   sheetStatus: document.getElementById("sheetStatus"),
   scanStatus: document.getElementById("scanStatus"),
+  progressBar: document.getElementById("progress-bar"),
+  progressBarFill: document.getElementById("progress-bar-fill"),
   viewer: document.getElementById("viewer"),
   viewerTitle: document.getElementById("viewerTitle"),
   stage: document.getElementById("stage"),
@@ -1252,6 +1254,19 @@ function useCode(code) {
   render(code);
 }
 
+function updateProgress(progress) {
+  if (els.progressBar && els.progressBarFill) {
+    els.progressBar.hidden = false;
+    els.progressBarFill.style.width = `${progress}%`;
+  }
+}
+
+function hideProgress() {
+  if (els.progressBar) {
+    els.progressBar.hidden = true;
+  }
+}
+
 // one pass over the current frame; alternates crop and layout mode each round
 async function readFrame(round) {
   const worker = await getRecogniser();
@@ -1348,18 +1363,34 @@ async function readSheet(file) {
       return;
     }
 
+    // Check for supported image types
+    const supportedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    if (!supportedTypes.includes(file.type)) {
+      sheetStatus(`Eroare: Format ${file.type} nu este suportat (folosește JPG, PNG, WEBP)`);
+      return;
+    }
+
     const bitmap = await createImageBitmap(file);
     const worker = await getRecogniser();
     await worker.setParameters({ tessedit_char_whitelist: SHEET_CHARS });
     const found = [];
-    
-    for (const pass of SHEET_PASSES) {
+    const totalPasses = SHEET_PASSES.length;
+    sheetStatus("Inițiez scanarea...");
+    updateProgress(5);
+
+    for (let i = 0; i < SHEET_PASSES.length; i++) {
+      const pass = SHEET_PASSES[i];
+      const progress = Math.round(((i + 1) / totalPasses) * 100);
+      sheetStatus(`Scanare ${i + 1}/${totalPasses} (${progress}%)…`);
+      updateProgress(progress);
       const canvas = sheetCanvas(bitmap, pass.width, pass.contrast);
       await worker.setParameters({ tessedit_pageseg_mode: pass.mode });
       const result = await worker.recognize(canvas);
       sheetCodes(result.data.words || [], canvas.width, found);
-      sheetStatus(`Am găsit ${found.length} articole…`);
+      sheetStatus(`Scanare ${i + 1}/${totalPasses} (${progress}%) - Am găsit ${found.length} articole…`);
     }
+    
+    hideProgress();
     
     await worker.setParameters({ tessedit_char_whitelist: "0123456789" });
     
@@ -1378,7 +1409,11 @@ async function readSheet(file) {
     render("");
   } catch (error) {
     console.error('Sheet scan error:', error);
-    sheetStatus(`Eroare: ${error.message || 'Poza nu a putut fi citită'} — încearcă cu o altă poza sau verifică formatul (JPG, PNG)`);
+    if (error.name === 'InvalidStateError') {
+      sheetStatus(`Eroare: Imaginea nu poate fi decodată — încearcă cu o altă poza (JPG, PNG, WEBP) sau verifică dacă fișierul este corupt`);
+    } else {
+      sheetStatus(`Eroare: ${error.message || 'Poza nu a putut fi citită'} — încearcă cu o altă poza sau verifică formatul (JPG, PNG)`);
+    }
   }
 }
 
@@ -1386,6 +1421,10 @@ async function readSheet(file) {
 async function scanLoop() {
   if (scanning || !stream) return;
   scanning = true;
+  els.scanStatus.textContent = "Inițiez camera...";
+  updateProgress(10);
+  await new Promise((resolve) => setTimeout(resolve, 500));
+  
   for (let round = 0; scanning; round += 1) {
     if (!els.scanVideo.videoWidth) {
       await new Promise((resolve) => setTimeout(resolve, 200));
@@ -1396,14 +1435,18 @@ async function scanLoop() {
       if (!scanning) return;
       if (code) {
         useCode(code);
+        hideProgress();
         return;
       }
+      const progress = Math.min(10 + (round * 5), 90);
+      updateProgress(progress);
       els.scanStatus.textContent = seen
-        ? `Am citit ${seen}, dar nu e în catalog`
-        : "Caut codul… ține telefonul nemișcat";
+        ? `Am citit ${seen}, dar nu e în catalog (încercare ${round + 1})`
+        : `Caut codul… (încercare ${round + 1}) ține telefonul nemișcat`;
     } catch (error) {
       console.error('Scan loop error:', error);
       els.scanStatus.textContent = `Eroare: ${error.message || 'Scanarea nu a putut porni'} — verifică permisiunile pentru camera`;
+      hideProgress();
       return;
     }
   }
