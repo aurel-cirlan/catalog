@@ -214,28 +214,44 @@ function logout() {
 
 // Check authentication on page load
 function checkAuth() {
+  // Debug log
+  console.log('checkAuth called');
+  console.log('Current URL:', window.location.href);
+  console.log('Current Path:', window.location.pathname);
+  console.log('isAuthPage:', window.isAuthPage);
+  console.log('isProtectedDomain:', isProtectedDomain());
+  console.log('isUserLoggedIn:', isUserLoggedIn());
+
+  // Direct check - skip if we're on login or register page
+  const currentUrl = window.location.href;
+  const currentPath = window.location.pathname;
+
   // Skip auth check if this is an auth page (login/register)
   if (window.isAuthPage) {
+    console.log('Skipping auth check - isAuthPage is true');
     return;
   }
 
   // Skip auth check if not on protected domain
   if (!isProtectedDomain()) {
+    console.log('Skipping auth check - not on protected domain');
     return;
   }
 
-  // Skip auth check on login and register pages
-  const currentPath = window.location.pathname;
-  const currentUrl = window.location.href;
+  // Skip auth check on login and register pages - check both path and URL
   if (currentPath.includes('login.html') || currentPath.includes('register.html') ||
       currentUrl.includes('login.html') || currentUrl.includes('register.html')) {
+    console.log('Skipping auth check - on login or register page');
     return;
   }
 
   // Check if user is logged in
   if (!isUserLoggedIn()) {
+    console.log('User not logged in - redirecting to register.html');
     // Redirect to register page (first thing to see)
     window.location.href = 'register.html';
+  } else {
+    console.log('User is logged in - no redirect');
   }
 }
 
