@@ -192,34 +192,48 @@
     <script>
         // Render user list
         function renderUserList() {
-            const users = getUsers();
-            const userList = document.getElementById('userList');
+            console.log('Rendering user list...');
 
-            if (users.length === 0) {
-                userList.innerHTML = '<div class="no-users">Nu există utilizatori înregistrati.</div>';
-                return;
+            try {
+                const usersStr = localStorage.getItem('catalog_users');
+                console.log('Users from localStorage:', usersStr);
+
+                const users = usersStr ? JSON.parse(usersStr) : [];
+                console.log('Parsed users:', users);
+
+                const userList = document.getElementById('userList');
+
+                if (users.length === 0) {
+                    userList.innerHTML = '<div class="no-users">Nu există utilizatori înregistrati.</div>';
+                    console.log('No users found');
+                    return;
+                }
+
+                console.log('Found', users.length, 'users');
+                userList.innerHTML = users.map(user => `
+                    <div class="user-item">
+                        <div class="user-info">
+                            <div class="user-email">${user.email}</div>
+                            <div class="user-status ${user.status}">
+                                Status: ${user.status === 'pending' ? 'În așteptare' : user.status === 'approved' ? 'Aprobat' : 'Respins'}
+                            </div>
+                            <div class="user-status">
+                                Creat: ${new Date(user.createdAt).toLocaleDateString('ro-RO')}
+                            </div>
+                        </div>
+                        <div class="user-actions">
+                            ${user.status === 'pending' ? `
+                                <button class="btn btn-approve" onclick="approveUser('${user.email}')">Aprobă</button>
+                                <button class="btn btn-reject" onclick="rejectUser('${user.email}')">Respinge</button>
+                            ` : ''}
+                            <button class="btn btn-delete" onclick="deleteUser('${user.email}')">Șterge</button>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Error rendering user list:', error);
+                document.getElementById('userList').innerHTML = '<div class="no-users">Eroare la încărcarea utilizatorilor.</div>';
             }
-
-            userList.innerHTML = users.map(user => `
-                <div class="user-item">
-                    <div class="user-info">
-                        <div class="user-email">${user.email}</div>
-                        <div class="user-status ${user.status}">
-                            Status: ${user.status === 'pending' ? 'În așteptare' : user.status === 'approved' ? 'Aprobat' : 'Respins'}
-                        </div>
-                        <div class="user-status">
-                            Creat: ${new Date(user.createdAt).toLocaleDateString('ro-RO')}
-                        </div>
-                    </div>
-                    <div class="user-actions">
-                        ${user.status === 'pending' ? `
-                            <button class="btn btn-approve" onclick="approveUser('${user.email}')">Aprobă</button>
-                            <button class="btn btn-reject" onclick="rejectUser('${user.email}')">Respinge</button>
-                        ` : ''}
-                        <button class="btn btn-delete" onclick="deleteUser('${user.email}')">Șterge</button>
-                    </div>
-                </div>
-            `).join('');
         }
 
         // Approve user
