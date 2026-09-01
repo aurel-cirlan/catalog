@@ -222,10 +222,6 @@ function checkAuth() {
   console.log('isProtectedDomain:', isProtectedDomain());
   console.log('isUserLoggedIn:', isUserLoggedIn());
 
-  // Direct check - skip if we're on login or register page
-  const currentUrl = window.location.href;
-  const currentPath = window.location.pathname;
-
   // Skip auth check if this is an auth page (login/register)
   if (window.isAuthPage) {
     console.log('Skipping auth check - isAuthPage is true');
@@ -235,20 +231,6 @@ function checkAuth() {
   // Skip auth check if not on protected domain
   if (!isProtectedDomain()) {
     console.log('Skipping auth check - not on protected domain');
-    return;
-  }
-
-  // Check if we're on an auth page by looking at the path
-  // Handle both /register and /register.html
-  const isAuthPath = currentPath === '/register' ||
-                     currentPath === '/login' ||
-                     currentPath === '/register.html' ||
-                     currentPath === '/login.html' ||
-                     currentPath.endsWith('/register') ||
-                     currentPath.endsWith('/login');
-
-  if (isAuthPath) {
-    console.log('Skipping auth check - on auth path:', currentPath);
     return;
   }
 
@@ -288,14 +270,7 @@ if (document.getElementById('registerForm')) {
   });
 }
 
-// Only run auth check on index.html (not on login/register pages)
-document.addEventListener('DOMContentLoaded', function() {
-  // Only check auth if we're on index.html
-  const currentPath = window.location.pathname;
-  const currentUrl = window.location.href;
-
-  if (!currentPath.includes('login.html') && !currentPath.includes('register.html') &&
-      !currentUrl.includes('login.html') && !currentUrl.includes('register.html')) {
-    checkAuth();
-  }
-});
+// Don't run auth check automatically - will be called from index.html only
+// document.addEventListener('DOMContentLoaded', function() {
+//   checkAuth();
+// });

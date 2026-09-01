@@ -369,6 +369,14 @@
     </dialog>
 
     <script src="auth.js"></script>
+    <script>
+        // Only run auth check on index.html
+        document.addEventListener('DOMContentLoaded', function() {
+            if (typeof checkAuth === 'function') {
+                checkAuth();
+            }
+        });
+    </script>
     <script src="app.js" type="module"></script>
   </body>
 </html>
