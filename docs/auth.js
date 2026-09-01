@@ -141,59 +141,59 @@ function userExists(email) {
 
 // Login function
 function login(email, password, remember = false) {
-  console.log('Login function called');
+  console.log('=== LOGIN FUNCTION START ===');
   console.log('Email:', email);
   console.log('Password:', password);
-  console.log('Hardcoded users:', HARDCODED_USERS);
 
   hideMessages();
 
-  // Validate email
-  if (!isValidEmail(email)) {
-    console.log('Email validation failed');
-    showError('Email invalid. Introdu un email valid.');
-    return false;
+  // Direct hardcoded check (simple)
+  if (email === 'admin@catalog.ro' && password === 'admin123') {
+    console.log('Admin login successful');
+
+    const adminUser = {
+      email: 'admin@catalog.ro',
+      isAdmin: true
+    };
+
+    setCurrentUser(adminUser);
+
+    if (remember) {
+      localStorage.setItem(SESSION_KEY, 'true');
+    } else {
+      localStorage.removeItem(SESSION_KEY);
+    }
+
+    window.location.href = 'index.html';
+    return true;
   }
 
-  // Validate password
-  if (!password) {
-    console.log('Password validation failed');
-    showError('Parola este obligatorie.');
-    return false;
+  // Regular users
+  for (let i = 1; i <= 10; i++) {
+    if (email === `user${i}@catalog.ro` && password === 'user123') {
+      console.log('User login successful');
+
+      const regularUser = {
+        email: `user${i}@catalog.ro`,
+        isAdmin: false
+      };
+
+      setCurrentUser(regularUser);
+
+      if (remember) {
+        localStorage.setItem(SESSION_KEY, 'true');
+      } else {
+        localStorage.removeItem(SESSION_KEY);
+      }
+
+      window.location.href = 'index.html';
+      return true;
+    }
   }
 
-  // Check if user exists in hardcoded users
-  const user = HARDCODED_USERS.find(u => u.email.toLowerCase() === email.toLowerCase());
-  console.log('Found user:', user);
-
-  if (!user) {
-    console.log('User not found in HARDCODED_USERS');
-    showError('Utilizatorul nu există. Contactează administratorul pentru acces.');
-    return false;
-  }
-
-  // Check password
-  if (user.password !== password) {
-    console.log('Password mismatch');
-    showError('Parolă incorectă.');
-    return false;
-  }
-
-  console.log('Login successful');
-  // Set current user
-  setCurrentUser(user);
-
-  // Remember me option
-  if (remember) {
-    localStorage.setItem(SESSION_KEY, 'true');
-  } else {
-    localStorage.removeItem(SESSION_KEY);
-  }
-
-  // Redirect to index.html
-  window.location.href = 'index.html';
-
-  return true;
+  console.log('Login failed - user not found');
+  showError('Utilizatorul nu există. Contactează administratorul pentru acces.');
+  return false;
 }
 
 // Register function (disabled - no registration allowed)
