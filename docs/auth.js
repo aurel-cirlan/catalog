@@ -214,6 +214,11 @@ function logout() {
 
 // Check authentication on page load
 function checkAuth() {
+  // Skip auth check if this is an auth page (login/register)
+  if (window.isAuthPage) {
+    return;
+  }
+
   // Skip auth check if not on protected domain
   if (!isProtectedDomain()) {
     return;

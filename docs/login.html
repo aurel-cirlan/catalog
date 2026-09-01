@@ -222,12 +222,10 @@
         </div>
     </div>
 
-    <script src="auth.js"></script>
     <script>
-        // Override checkAuth on login page to prevent redirect loop
-        function checkAuth() {
-            // Do nothing on login page
-        }
+        // Prevent auth.js from redirecting on login page
+        window.isAuthPage = true;
     </script>
+    <script src="auth.js"></script>
 </body>
 </html>

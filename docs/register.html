@@ -231,12 +231,10 @@
         </div>
     </div>
 
-    <script src="auth.js"></script>
     <script>
-        // Override checkAuth on register page to prevent redirect loop
-        function checkAuth() {
-            // Do nothing on register page
-        }
+        // Prevent auth.js from redirecting on register page
+        window.isAuthPage = true;
     </script>
+    <script src="auth.js"></script>
 </body>
 </html>
