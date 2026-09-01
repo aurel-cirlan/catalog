@@ -238,10 +238,17 @@ function checkAuth() {
     return;
   }
 
-  // Skip auth check on login and register pages - check both path and URL
-  if (currentPath.includes('login.html') || currentPath.includes('register.html') ||
-      currentUrl.includes('login.html') || currentUrl.includes('register.html')) {
-    console.log('Skipping auth check - on login or register page');
+  // Check if we're on an auth page by looking at the path
+  // Handle both /register and /register.html
+  const isAuthPath = currentPath === '/register' ||
+                     currentPath === '/login' ||
+                     currentPath === '/register.html' ||
+                     currentPath === '/login.html' ||
+                     currentPath.endsWith('/register') ||
+                     currentPath.endsWith('/login');
+
+  if (isAuthPath) {
+    console.log('Skipping auth check - on auth path:', currentPath);
     return;
   }
 
