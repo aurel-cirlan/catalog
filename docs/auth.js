@@ -138,6 +138,17 @@ function login(email, password, remember = false) {
     return false;
   }
 
+  // Check if user is approved
+  if (user.status === 'pending') {
+    showError('Contul tău este în așteptare de aprobare. Te vom anunța când va fi activ.');
+    return false;
+  }
+
+  if (user.status === 'rejected') {
+    showError('Contul tău a fost respins. Contactează administratorul pentru detalii.');
+    return false;
+  }
+
   // Set current user
   setCurrentUser(user);
 
@@ -192,10 +203,11 @@ function register(email, password, confirmPassword) {
   }
 
   console.log('Creating new user');
-  // Create new user
+  // Create new user with pending status
   const newUser = {
     email: email.toLowerCase(),
     password: password,
+    status: 'pending', // pending, approved, rejected
     createdAt: new Date().toISOString()
   };
 
@@ -204,16 +216,16 @@ function register(email, password, confirmPassword) {
   users.push(newUser);
   saveUsers(users);
 
-  console.log('User saved successfully');
+  console.log('User saved successfully with pending status');
 
   // Show success message
-  showSuccess('Cont creat cu succes! Acum te poți autentifica.');
+  showSuccess('Cont creat cu succes! Contul tău va fi aprobat manual. Te vom anunța când va fi activ.');
 
-  // Redirect to login after 2 seconds
+  // Redirect to login after 3 seconds
   setTimeout(() => {
     console.log('Redirecting to login.html');
     window.location.href = 'login.html';
-  }, 2000);
+  }, 3000);
 
   return true;
 }

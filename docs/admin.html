@@ -1,0 +1,267 @@
+<!doctype html>
+<!--
+  Catalog GEALAN - admin panel
+  Copyright (c) 2026 Aurel Cirlan - https://aurelcirlan.ro
+  Toate drepturile rezervate. Copierea, modificarea sau redistribuirea
+  acestui cod fara acordul scris al autorului este interzisa.
+-->
+<html lang="ro">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#1a1a2e" />
+    <meta name="author" content="Aurel Cîrlan" />
+    <title>Admin Panel - Catalog GEALAN</title>
+    <link rel="stylesheet" href="styles.css" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .admin-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .admin-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .admin-header h1 {
+            color: #1a1a2e;
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .admin-header p {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .user-list {
+            margin-top: 20px;
+        }
+
+        .user-item {
+            background: #f5f5f5;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .user-info {
+            flex: 1;
+        }
+
+        .user-email {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .user-status {
+            font-size: 14px;
+            color: #666;
+        }
+
+        .user-status.pending {
+            color: #f59e0b;
+        }
+
+        .user-status.approved {
+            color: #10b981;
+        }
+
+        .user-status.rejected {
+            color: #ef4444;
+        }
+
+        .user-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-approve {
+            background: #10b981;
+            color: white;
+        }
+
+        .btn-approve:hover {
+            background: #059669;
+        }
+
+        .btn-reject {
+            background: #ef4444;
+            color: white;
+        }
+
+        .btn-reject:hover {
+            background: #dc2626;
+        }
+
+        .btn-delete {
+            background: #6b7280;
+            color: white;
+        }
+
+        .btn-delete:hover {
+            background: #4b5563;
+        }
+
+        .back-link {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .back-link a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .back-link a:hover {
+            text-decoration: underline;
+        }
+
+        .no-users {
+            text-align: center;
+            color: #666;
+            padding: 40px;
+        }
+
+        @media (max-width: 600px) {
+            .user-item {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .user-actions {
+                margin-top: 15px;
+                width: 100%;
+            }
+
+            .btn {
+                flex: 1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="admin-container">
+        <div class="admin-header">
+            <h1>Admin Panel</h1>
+            <p>Aprobă sau respinge utilizatori pentru catalogul GEALAN</p>
+        </div>
+
+        <div id="userList" class="user-list"></div>
+
+        <div class="back-link">
+            <a href="index.html">Înapoi la catalog</a>
+        </div>
+    </div>
+
+    <script src="auth.js"></script>
+    <script>
+        // Render user list
+        function renderUserList() {
+            const users = getUsers();
+            const userList = document.getElementById('userList');
+
+            if (users.length === 0) {
+                userList.innerHTML = '<div class="no-users">Nu există utilizatori înregistrati.</div>';
+                return;
+            }
+
+            userList.innerHTML = users.map(user => `
+                <div class="user-item">
+                    <div class="user-info">
+                        <div class="user-email">${user.email}</div>
+                        <div class="user-status ${user.status}">
+                            Status: ${user.status === 'pending' ? 'În așteptare' : user.status === 'approved' ? 'Aprobat' : 'Respins'}
+                        </div>
+                        <div class="user-status">
+                            Creat: ${new Date(user.createdAt).toLocaleDateString('ro-RO')}
+                        </div>
+                    </div>
+                    <div class="user-actions">
+                        ${user.status === 'pending' ? `
+                            <button class="btn btn-approve" onclick="approveUser('${user.email}')">Aprobă</button>
+                            <button class="btn btn-reject" onclick="rejectUser('${user.email}')">Respinge</button>
+                        ` : ''}
+                        <button class="btn btn-delete" onclick="deleteUser('${user.email}')">Șterge</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Approve user
+        function approveUser(email) {
+            const users = getUsers();
+            const userIndex = users.findIndex(u => u.email.toLowerCase() === email.toLowerCase());
+
+            if (userIndex !== -1) {
+                users[userIndex].status = 'approved';
+                saveUsers(users);
+                renderUserList();
+            }
+        }
+
+        // Reject user
+        function rejectUser(email) {
+            const users = getUsers();
+            const userIndex = users.findIndex(u => u.email.toLowerCase() === email.toLowerCase());
+
+            if (userIndex !== -1) {
+                users[userIndex].status = 'rejected';
+                saveUsers(users);
+                renderUserList();
+            }
+        }
+
+        // Delete user
+        function deleteUser(email) {
+            if (!confirm(`Ești sigur că vrei să ștergi utilizatorul ${email}?`)) {
+                return;
+            }
+
+            const users = getUsers();
+            const filteredUsers = users.filter(u => u.email.toLowerCase() !== email.toLowerCase());
+            saveUsers(filteredUsers);
+            renderUserList();
+        }
+
+        // Render on load
+        document.addEventListener('DOMContentLoaded', function() {
+            renderUserList();
+        });
+    </script>
+</body>
+</html>
