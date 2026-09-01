@@ -234,8 +234,8 @@ function checkAuth() {
 
   // Check if user is logged in
   if (!isUserLoggedIn()) {
-    // Redirect to login page
-    window.location.href = 'login.html';
+    // Redirect to register page (first thing to see)
+    window.location.href = 'register.html';
   }
 }
 
