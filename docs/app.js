@@ -109,6 +109,8 @@ const els = {
   suggestions: document.getElementById("suggestions"),
   search: document.querySelector(".search"),
   lang: document.getElementById("lang"),
+  userDisplay: document.getElementById("userDisplay"),
+  logout: document.getElementById("logout"),
 };
 
 let hits = [];
@@ -1502,6 +1504,11 @@ els.feedback.addEventListener("click", () => {
 });
 els.feedbackClose.addEventListener("click", () => els.feedbackBox.close());
 els.sharedClose.addEventListener("click", closeShared);
+els.logout.addEventListener("click", () => {
+  if (typeof logout === 'function') {
+    logout();
+  }
+});
 els.worklistClear.addEventListener("click", () => {
   worklist = [];
   saveWorklist();
@@ -1732,6 +1739,15 @@ async function boot() {
     if (sharedList.length) return;
     if (!localStorage.getItem(GUIDE_KEY)) els.guide.showModal();
     else if (!shared) els.query.focus();
+
+    // Update user display if logged in
+    if (typeof getCurrentUser === 'function' && getCurrentUser()) {
+      const user = getCurrentUser();
+      if (els.userDisplay) {
+        els.userDisplay.textContent = user.email;
+        els.userDisplay.hidden = false;
+      }
+    }
   } catch (error) {
     els.status.textContent = `Catalogul nu a putut fi încărcat: ${error.message}`;
   }
