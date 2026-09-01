@@ -111,6 +111,7 @@ const els = {
   lang: document.getElementById("lang"),
   userDisplay: document.getElementById("userDisplay"),
   logout: document.getElementById("logout"),
+  adminPanel: document.getElementById("adminPanel"),
 };
 
 let hits = [];
@@ -1746,6 +1747,13 @@ async function boot() {
       if (els.userDisplay) {
         els.userDisplay.textContent = user.email;
         els.userDisplay.hidden = false;
+      }
+      // Show admin panel button for admin users
+      if (user.isAdmin && els.adminPanel) {
+        els.adminPanel.hidden = false;
+        els.adminPanel.addEventListener('click', () => {
+          window.location.href = 'admin.html';
+        });
       }
     }
   } catch (error) {

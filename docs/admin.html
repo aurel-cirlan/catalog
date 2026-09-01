@@ -53,6 +53,44 @@
             font-size: 14px;
         }
 
+        .filter-section {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .filter-section label {
+            margin-right: 15px;
+            font-weight: 600;
+        }
+
+        .filter-section select {
+            padding: 8px 12px;
+            border-radius: 8px;
+            border: 2px solid #e0e0e0;
+            font-size: 14px;
+        }
+
+        .add-user-section {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .add-user-btn {
+            background: #667eea;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .add-user-btn:hover {
+            background: #5568d3;
+        }
+
         .user-list {
             margin-top: 20px;
         }
@@ -178,7 +216,20 @@
     <div class="admin-container">
         <div class="admin-header">
             <h1>Admin Panel</h1>
-            <p>Aprobă sau respinge utilizatori pentru catalogul GEALAN</p>
+            <p>Vizualizează utilizatorii catalogului GEALAN (max 10)</p>
+        </div>
+
+        <div class="filter-section">
+            <label>Filtru:</label>
+            <select id="filterStatus" onchange="renderUserList()">
+                <option value="all">Toți utilizatorii</option>
+                <option value="true">Admin</option>
+                <option value="false">User</option>
+            </select>
+        </div>
+
+        <div class="add-user-section">
+            <p style="color: #666; font-size: 14px;">Pentru a adăuga sau modifica utilizatori, modifică HARDCODED_USERS în auth.js și redeploy.</p>
         </div>
 
         <div id="userList" class="user-list"></div>
@@ -190,43 +241,39 @@
 
     <script src="auth.js"></script>
     <script>
-        // Render user list
+        // Render user list (using hardcoded users)
         function renderUserList() {
             console.log('Rendering user list...');
 
             try {
-                const usersStr = localStorage.getItem('catalog_users');
-                console.log('Users from localStorage:', usersStr);
+                const users = HARDCODED_USERS;
+                console.log('Hardcoded users:', users);
 
-                const users = usersStr ? JSON.parse(usersStr) : [];
-                console.log('Parsed users:', users);
+                const filterAdmin = document.getElementById('filterStatus').value;
+                console.log('Filter admin:', filterAdmin);
+
+                const filteredUsers = filterAdmin === 'all' ? users : users.filter(u => u.isAdmin.toString() === filterAdmin);
+                console.log('Filtered users:', filteredUsers);
 
                 const userList = document.getElementById('userList');
 
-                if (users.length === 0) {
-                    userList.innerHTML = '<div class="no-users">Nu există utilizatori înregistrati.</div>';
+                if (filteredUsers.length === 0) {
+                    userList.innerHTML = '<div class="no-users">Nu există utilizatori.</div>';
                     console.log('No users found');
                     return;
                 }
 
-                console.log('Found', users.length, 'users');
-                userList.innerHTML = users.map(user => `
+                console.log('Found', filteredUsers.length, 'users');
+                userList.innerHTML = filteredUsers.map(user => `
                     <div class="user-item">
                         <div class="user-info">
                             <div class="user-email">${user.email}</div>
-                            <div class="user-status ${user.status}">
-                                Status: ${user.status === 'pending' ? 'În așteptare' : user.status === 'approved' ? 'Aprobat' : 'Respins'}
-                            </div>
-                            <div class="user-status">
-                                Creat: ${new Date(user.createdAt).toLocaleDateString('ro-RO')}
+                            <div class="user-status ${user.isAdmin ? 'approved' : ''}">
+                                ${user.isAdmin ? 'Admin' : 'User'}
                             </div>
                         </div>
                         <div class="user-actions">
-                            ${user.status === 'pending' ? `
-                                <button class="btn btn-approve" onclick="approveUser('${user.email}')">Aprobă</button>
-                                <button class="btn btn-reject" onclick="rejectUser('${user.email}')">Respinge</button>
-                            ` : ''}
-                            <button class="btn btn-delete" onclick="deleteUser('${user.email}')">Șterge</button>
+                            <button class="btn btn-delete" onclick="changePassword('${user.email}')">Schimbă parolă</button>
                         </div>
                     </div>
                 `).join('');
@@ -234,6 +281,20 @@
                 console.error('Error rendering user list:', error);
                 document.getElementById('userList').innerHTML = '<div class="no-users">Eroare la încărcarea utilizatorilor.</div>';
             }
+        }
+
+        // Change password
+        function changePassword(email) {
+            const newPassword = prompt('Introdu noua parolă pentru ' + email + ':');
+            if (!newPassword) return;
+
+            if (newPassword.length < 8) {
+                alert('Parola trebuie să aibă minim 8 caractere!');
+                return;
+            }
+
+            // This would need to be changed in the HARDCODED_USERS array in auth.js
+            alert('Pentru a schimba parola, modifică HARDCODED_USERS în auth.js și redeploy.');
         }
 
         // Approve user

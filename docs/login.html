@@ -218,7 +218,9 @@
         </form>
 
         <div class="back-link">
-            <a href="register.html">Nu ai cont? Înregistrează-te</a>
+            <p style="color: #666; font-size: 14px; text-align: center; margin-bottom: 10px;">
+                Contactează administratorul pentru acces
+            </p>
         </div>
     </div>
 
@@ -227,5 +229,14 @@
         window.isAuthPage = true;
     </script>
     <script src="auth.js"></script>
+    <script>
+        // Test HARDCODED_USERS
+        console.log('=== LOGIN PAGE TEST ===');
+        console.log('HARDCODED_USERS:', typeof HARDCODED_USERS !== 'undefined' ? HARDCODED_USERS : 'NOT DEFINED');
+        if (typeof HARDCODED_USERS !== 'undefined') {
+            console.log('Admin user:', HARDCODED_USERS.find(u => u.email === 'admin@catalog.ro'));
+        }
+        console.log('=== END LOGIN PAGE TEST ===');
+    </script>
 </body>
 </html>

@@ -5,6 +5,8 @@
   acestui cod fara acordul scris al autorului este interzisa.
 */
 
+console.log('=== AUTH.JS LOADED ===');
+
 // localStorage keys
 const USERS_KEY = 'catalog_users';
 const CURRENT_USER_KEY = 'catalog_current_user';
@@ -28,6 +30,29 @@ function saveUsers(users) {
     console.error('Error saving users:', error);
   }
 }
+
+// Hardcoded users (max 10)
+const HARDCODED_USERS = [
+  // Admin account
+  { email: 'admin@catalog.ro', password: 'admin123', isAdmin: true },
+  // User accounts (max 9 additional users)
+  { email: 'user1@catalog.ro', password: 'user123', isAdmin: false },
+  { email: 'user2@catalog.ro', password: 'user123', isAdmin: false },
+  { email: 'user3@catalog.ro', password: 'user123', isAdmin: false },
+  { email: 'user4@catalog.ro', password: 'user123', isAdmin: false },
+  { email: 'user5@catalog.ro', password: 'user123', isAdmin: false },
+  { email: 'user6@catalog.ro', password: 'user123', isAdmin: false },
+  { email: 'user7@catalog.ro', password: 'user123', isAdmin: false },
+  { email: 'user8@catalog.ro', password: 'user123', isAdmin: false },
+  { email: 'user9@catalog.ro', password: 'user123', isAdmin: false },
+  { email: 'user10@catalog.ro', password: 'user123', isAdmin: false },
+];
+
+const MAX_USERS = 10;
+
+console.log('=== AUTH.JS HARDCODED_USERS ===');
+console.log('HARDCODED_USERS:', HARDCODED_USERS);
+console.log('=== END HARDCODED_USERS ===');
 
 function getCurrentUser() {
   try {
@@ -92,8 +117,11 @@ function hideMessages() {
 
 // Validate email format
 function isValidEmail(email) {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(email);
+  console.log('isValidEmail called with:', email);
+  // Simplified validation - just check if it has @ and .
+  const isValid = email && email.includes('@') && email.includes('.');
+  console.log('Email validation result:', isValid);
+  return isValid;
 }
 
 // Validate password strength
@@ -103,52 +131,55 @@ function isValidPassword(password) {
 
 // Check if user exists
 function userExists(email) {
+  console.log('userExists called with:', email);
   const users = getUsers();
-  return users.some(user => user.email.toLowerCase() === email.toLowerCase());
+  console.log('Current users:', users);
+  const exists = users.some(user => user.email.toLowerCase() === email.toLowerCase());
+  console.log('User exists result:', exists);
+  return exists;
 }
 
 // Login function
 function login(email, password, remember = false) {
+  console.log('Login function called');
+  console.log('Email:', email);
+  console.log('Password:', password);
+  console.log('Hardcoded users:', HARDCODED_USERS);
+
   hideMessages();
 
   // Validate email
   if (!isValidEmail(email)) {
+    console.log('Email validation failed');
     showError('Email invalid. Introdu un email valid.');
     return false;
   }
 
   // Validate password
   if (!password) {
+    console.log('Password validation failed');
     showError('Parola este obligatorie.');
     return false;
   }
 
-  // Check if user exists
-  const users = getUsers();
-  const user = users.find(u => u.email.toLowerCase() === email.toLowerCase());
+  // Check if user exists in hardcoded users
+  const user = HARDCODED_USERS.find(u => u.email.toLowerCase() === email.toLowerCase());
+  console.log('Found user:', user);
 
   if (!user) {
-    showError('Utilizatorul nu există. Înregistrează-te pentru a accesa catalogul.');
+    console.log('User not found in HARDCODED_USERS');
+    showError('Utilizatorul nu există. Contactează administratorul pentru acces.');
     return false;
   }
 
   // Check password
   if (user.password !== password) {
+    console.log('Password mismatch');
     showError('Parolă incorectă.');
     return false;
   }
 
-  // Check if user is approved
-  if (user.status === 'pending') {
-    showError('Contul tău este în așteptare de aprobare. Te vom anunța când va fi activ.');
-    return false;
-  }
-
-  if (user.status === 'rejected') {
-    showError('Contul tău a fost respins. Contactează administratorul pentru detalii.');
-    return false;
-  }
-
+  console.log('Login successful');
   // Set current user
   setCurrentUser(user);
 
@@ -165,69 +196,11 @@ function login(email, password, remember = false) {
   return true;
 }
 
-// Register function
+// Register function (disabled - no registration allowed)
 function register(email, password, confirmPassword) {
-  console.log('register function called');
-  console.log('Email:', email);
-  console.log('Password length:', password ? password.length : 0);
-  console.log('Confirm password length:', confirmPassword ? confirmPassword.length : 0);
-
   hideMessages();
-
-  // Validate email
-  if (!isValidEmail(email)) {
-    console.log('Email validation failed');
-    showError('Email invalid. Introdu un email valid.');
-    return false;
-  }
-
-  // Validate password
-  if (!isValidPassword(password)) {
-    console.log('Password validation failed');
-    showError('Parola trebuie să aibă minim 8 caractere.');
-    return false;
-  }
-
-  // Validate confirm password
-  if (password !== confirmPassword) {
-    console.log('Password mismatch');
-    showError('Parolele nu se potrivesc.');
-    return false;
-  }
-
-  // Check if user already exists
-  if (userExists(email)) {
-    console.log('User already exists');
-    showError('Un utilizator cu acest email există deja.');
-    return false;
-  }
-
-  console.log('Creating new user');
-  // Create new user with pending status
-  const newUser = {
-    email: email.toLowerCase(),
-    password: password,
-    status: 'pending', // pending, approved, rejected
-    createdAt: new Date().toISOString()
-  };
-
-  // Save user
-  const users = getUsers();
-  users.push(newUser);
-  saveUsers(users);
-
-  console.log('User saved successfully with pending status');
-
-  // Show success message
-  showSuccess('Cont creat cu succes! Contul tău va fi aprobat manual. Te vom anunța când va fi activ.');
-
-  // Redirect to login after 3 seconds
-  setTimeout(() => {
-    console.log('Redirecting to login.html');
-    window.location.href = 'login.html';
-  }, 3000);
-
-  return true;
+  showError('Înregistrarea nu este permisă. Contactează administratorul pentru acces.');
+  return false;
 }
 
 // Logout function
