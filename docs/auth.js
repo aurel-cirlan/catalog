@@ -221,7 +221,9 @@ function checkAuth() {
 
   // Skip auth check on login and register pages
   const currentPath = window.location.pathname;
-  if (currentPath.includes('login.html') || currentPath.includes('register.html')) {
+  const currentUrl = window.location.href;
+  if (currentPath.includes('login.html') || currentPath.includes('register.html') ||
+      currentUrl.includes('login.html') || currentUrl.includes('register.html')) {
     return;
   }
 
@@ -258,7 +260,14 @@ if (document.getElementById('registerForm')) {
   });
 }
 
-// Run auth check on page load
+// Only run auth check on index.html (not on login/register pages)
 document.addEventListener('DOMContentLoaded', function() {
-  checkAuth();
+  // Only check auth if we're on index.html
+  const currentPath = window.location.pathname;
+  const currentUrl = window.location.href;
+
+  if (!currentPath.includes('login.html') && !currentPath.includes('register.html') &&
+      !currentUrl.includes('login.html') && !currentUrl.includes('register.html')) {
+    checkAuth();
+  }
 });
