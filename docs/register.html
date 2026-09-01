@@ -206,7 +206,34 @@
 <body>
     <div class="register-container">
         <div class="logo-section">
-            <img src="logo-bg.svg" alt="Logo AC" class="logo-bg" />
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="120" height="120" class="logo-bg">
+              <defs>
+                <linearGradient id="steauaGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" style="stop-color:#00205B;stop-opacity:1" />
+                  <stop offset="50%" style="stop-color:#A91B1B;stop-opacity:1" />
+                  <stop offset="100%" style="stop-color:#00205B;stop-opacity:1" />
+                </linearGradient>
+              </defs>
+              <circle cx="256" cy="256" r="250" fill="url(#steauaGradient)" />
+              <g fill="none" stroke="white" stroke-width="8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M 100 280 Q 256 260 412 280" stroke-width="10" />
+                <path d="M 120 280 L 140 180 Q 256 160 372 180 L 392 280" />
+                <path d="M 160 280 Q 160 380 256 380 Q 352 380 352 280" />
+                <path d="M 190 310 L 230 310" stroke-width="6" />
+                <path d="M 282 310 L 322 310" stroke-width="6" />
+                <path d="M 230 350 Q 256 360 282 350" stroke-width="5" />
+              </g>
+              <g fill="white" stroke="none">
+                <text x="256" y="250" font-family="monospace" font-size="48" font-weight="bold" text-anchor="middle" fill="white">&lt;/&gt;</text>
+              </g>
+              <g fill="none" stroke="white" stroke-width="6" stroke-linecap="round">
+                <path d="M 380 150 L 420 110 L 460 150" />
+                <path d="M 420 110 L 420 200" />
+              </g>
+              <g fill="white" stroke="none">
+                <polygon points="80,180 90,210 120,210 95,230 105,260 80,240 55,260 65,230 40,210 70,210" transform="scale(0.8) translate(50, 50)" />
+              </g>
+            </svg>
         </div>
         <div class="register-header">
             <h1>Înregistrare</h1>
