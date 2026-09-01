@@ -156,32 +156,42 @@ function login(email, password, remember = false) {
 
 // Register function
 function register(email, password, confirmPassword) {
+  console.log('register function called');
+  console.log('Email:', email);
+  console.log('Password length:', password ? password.length : 0);
+  console.log('Confirm password length:', confirmPassword ? confirmPassword.length : 0);
+
   hideMessages();
 
   // Validate email
   if (!isValidEmail(email)) {
+    console.log('Email validation failed');
     showError('Email invalid. Introdu un email valid.');
     return false;
   }
 
   // Validate password
   if (!isValidPassword(password)) {
+    console.log('Password validation failed');
     showError('Parola trebuie să aibă minim 8 caractere.');
     return false;
   }
 
   // Validate confirm password
   if (password !== confirmPassword) {
+    console.log('Password mismatch');
     showError('Parolele nu se potrivesc.');
     return false;
   }
 
   // Check if user already exists
   if (userExists(email)) {
+    console.log('User already exists');
     showError('Un utilizator cu acest email există deja.');
     return false;
   }
 
+  console.log('Creating new user');
   // Create new user
   const newUser = {
     email: email.toLowerCase(),
@@ -194,11 +204,14 @@ function register(email, password, confirmPassword) {
   users.push(newUser);
   saveUsers(users);
 
+  console.log('User saved successfully');
+
   // Show success message
   showSuccess('Cont creat cu succes! Acum te poți autentifica.');
 
   // Redirect to login after 2 seconds
   setTimeout(() => {
+    console.log('Redirecting to login.html');
     window.location.href = 'login.html';
   }, 2000);
 
