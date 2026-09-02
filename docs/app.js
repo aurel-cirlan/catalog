@@ -152,7 +152,6 @@ const translations = {
     theme: "☀",
     lang: "🌐",
     help: "?",
-    sheetStatusHidden: true,
     shared: "Listă primită",
     sharedSave: "salvează la mine",
     sharedClose: "închide",
@@ -202,7 +201,6 @@ const translations = {
     theme: "☀",
     lang: "🌐",
     help: "?",
-    sheetStatusHidden: true,
     shared: "Received list",
     sharedSave: "save to mine",
     sharedClose: "close",
@@ -252,7 +250,6 @@ const translations = {
     theme: "☀",
     lang: "🌐",
     help: "?",
-    sheetStatusHidden: true,
     shared: "Empfangene Liste",
     sharedSave: "zu mir speichern",
     sharedClose: "schließen",
@@ -703,10 +700,7 @@ function renderShared() {
   els.history.hidden = true;
   els.depths.hidden = true;
   els.sections.hidden = true;
-  els.status.textContent =
-    sharedKind === "scanat\u0103"
-      ? `Am g\u0103sit ${found.length} articole pe dispozi\u021bie \u2014 verific\u0103 lista`
-      : `Ai primit ${found.length} articole`;
+  els.status.textContent = `Ai primit ${found.length} articole`;
   els.results.append(...found.map(resultCard));
 }
 
@@ -1093,274 +1087,7 @@ function setZoomMode(mode) {
     mode === "page" ? "\ud83d\udd0e Articol" : "\u25a1 Pagina";
 }
 
-let recogniser = null;
-let stream = null;
-let scanning = false;
-let torchOn = false;
 
-function loadScript(src) {
-  return new Promise((resolve, reject) => {
-    const tag = document.createElement("script");
-    tag.src = src;
-    tag.onload = resolve;
-    tag.onerror = () => reject(new Error("script indisponibil"));
-    document.head.append(tag);
-  });
-}
-
-async function getRecogniser() {
-  if (recogniser) return recogniser;
-  if (!window.Tesseract) await loadScript("vendor/tesseract/tesseract.min.js");
-  recogniser = await window.Tesseract.createWorker("eng", 1, {
-    workerPath: new URL("vendor/tesseract/worker.min.js", location.href).href,
-    corePath: new URL("vendor/tesseract/", location.href).href,
-    langPath: new URL("vendor/tessdata", location.href).href,
-    gzip: true,
-  });
-  await recogniser.setParameters({ tessedit_char_whitelist: "0123456789" });
-  return recogniser;
-}
-
-// crop of the video behind the on-screen frame, enlarged and hardened for OCR
-function shot(part) {
-  const video = els.scanVideo;
-  const width = Math.round(video.videoWidth * part);
-  const height = Math.round(video.videoHeight * part * 0.6);
-  const scale = Math.min(1400 / width, 4);
-  const canvas = document.createElement("canvas");
-  canvas.width = Math.round(width * scale);
-  canvas.height = Math.round(height * scale);
-  const context = canvas.getContext("2d");
-  context.filter = "grayscale(1) contrast(2) brightness(1.15)";
-  context.drawImage(
-    video,
-    Math.round((video.videoWidth - width) / 2),
-    Math.round((video.videoHeight - height) / 2),
-    width,
-    height,
-    0,
-    0,
-    canvas.width,
-    canvas.height,
-  );
-  return canvas;
-}
-
-// the code the user aimed at: the known one that is big and near the middle
-function centredCode(words, canvas) {
-  const middle = { x: canvas.width / 2, y: canvas.height / 2 };
-  const found = words
-    .map((word) => ({
-      code: (word.text.replace(/\s+/g, "").match(CODE_RE) || [])[0],
-      distance: Math.hypot(
-        (word.bbox.x0 + word.bbox.x1) / 2 - middle.x,
-        (word.bbox.y0 + word.bbox.y1) / 2 - middle.y,
-      ),
-      height: word.bbox.y1 - word.bbox.y0,
-    }))
-    .filter((word) => word.code && hits.some((hit) => hit.code === word.code))
-    .sort((a, b) => a.distance / a.height - b.distance / b.height);
-  return found.length ? found[0].code : null;
-}
-
-async function openScanner() {
-  try {
-    stream = await navigator.mediaDevices.getUserMedia({
-      video: {
-        facingMode: { ideal: "environment" },
-        width: { ideal: 1920 },
-        height: { ideal: 1080 },
-      },
-    });
-  } catch {
-    // without a camera the sheet can still be read from a photo
-    stream = null;
-    els.scanStatus.textContent =
-      "Camera nu este disponibilă — folosește 📄 Dispoziție";
-    els.scanTorch.hidden = true;
-    els.scanner.showModal();
-    return;
-  }
-  torchOn = false;
-  els.scanTorch.hidden = !track()?.getCapabilities?.().torch;
-  els.scanStatus.textContent = "Se pregătește…";
-  els.scanVideo.srcObject = stream;
-  await els.scanVideo.play();
-  els.scanner.showModal();
-  scanLoop();
-}
-
-function track() {
-  return stream?.getVideoTracks()[0];
-}
-
-async function toggleTorch() {
-  torchOn = !torchOn;
-  try {
-    await track()?.applyConstraints({ advanced: [{ torch: torchOn }] });
-  } catch {
-    els.scanTorch.hidden = true;
-  }
-}
-
-function closeScanner() {
-  scanning = false;
-  if (stream) stream.getTracks().forEach((item) => item.stop());
-  stream = null;
-  els.scanVideo.srcObject = null;
-  if (els.scanner.open) els.scanner.close();
-}
-
-function useCode(code) {
-  closeScanner();
-  els.query.value = code;
-  remember(code);
-  render(code);
-}
-
-// one pass over the current frame; alternates crop and layout mode each round
-async function readFrame(round) {
-  const worker = await getRecogniser();
-  const canvas = shot(round % 2 ? 0.95 : 0.65);
-  await worker.setParameters({
-    tessedit_pageseg_mode: round % 4 < 2 ? "11" : "6",
-  });
-  const result = await worker.recognize(canvas);
-  const words = result.data.words || [];
-  const code = centredCode(words, canvas);
-  const seen = words.flatMap((word) => word.text.match(CODE_RE) || [])[0];
-  return { code, seen };
-}
-
-// article numbers on a picking list: extract first 4 digits (GEALAN catalog code)
-// More permissive regex: match any text containing 4+ consecutive digits
-const SHEET_CODE_RE = /\d{4,}/;
-// the codes sit in the left column; quantities and stock live further right
-const SHEET_COLUMN = 0.45;
-const SHEET_CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ.,-/QRGX";
-// multiple readings with different settings to catch codes from various distances
-const SHEET_PASSES = [
-  { width: 1900, mode: "6", contrast: 1.8 },
-  { width: 2800, mode: "11", contrast: 2.0 },
-  { width: 3200, mode: "6", contrast: 2.5 },
-  { width: 3800, mode: "11", contrast: 3.0 },
-  { width: 4500, mode: "6", contrast: 3.5 },
-  { width: 5000, mode: "11", contrast: 4.0 },
-];
-
-// the first four digits of an article number are the catalog code
-function sheetCodes(words, width, found) {
-  for (const word of words) {
-    const text = word.text.trim();
-
-    // Skip if outside column
-    if (word.bbox.x0 / width > SHEET_COLUMN) {
-      continue;
-    }
-
-    // Extract all digits from the recognized text
-    const digits = text.replace(/\D/g, '');
-
-    // Check if we have at least 4 digits
-    if (digits.length >= 4) {
-      const code = digits.slice(0, 4);
-
-      if (hitByCode(code) && !found.includes(code)) {
-        found.push(code);
-      }
-    }
-  }
-}
-
-function sheetCanvas(bitmap, target, contrast = 1.6) {
-  const scale = target / bitmap.width;
-  const canvas = document.createElement("canvas");
-  canvas.width = Math.round(bitmap.width * scale);
-  canvas.height = Math.round(bitmap.height * scale);
-  const context = canvas.getContext("2d");
-
-  // Enhanced preprocessing with multiple filters
-  context.filter = `grayscale(1) contrast(${contrast}) brightness(1.1) saturate(1.2)`;
-  context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-
-  return canvas;
-}
-
-// the sheet can be read from the scanner or straight from the main screen
-function sheetStatus(text) {
-  if (els.scanner.open) els.scanStatus.textContent = text;
-  els.sheetStatus.hidden = false;
-  els.sheetStatus.textContent = text;
-}
-
-async function readSheet(file) {
-  scanning = false;
-  sheetStatus("Citesc dispozi\u021bia\u2026 dureaz\u0103 ~40 de secunde");
-  try {
-    const bitmap = await createImageBitmap(file);
-    const worker = await getRecogniser();
-    await worker.setParameters({ tessedit_char_whitelist: SHEET_CHARS });
-    const found = [];
-    for (const pass of SHEET_PASSES) {
-      const canvas = sheetCanvas(bitmap, pass.width, pass.contrast);
-      await worker.setParameters({ tessedit_pageseg_mode: pass.mode });
-      const result = await worker.recognize(canvas);
-      sheetCodes(result.data.words || [], canvas.width, found);
-    }
-    await worker.setParameters({ tessedit_char_whitelist: "0123456789" });
-
-    if (!found.length) {
-      sheetStatus(
-        "Nu am găsit coduri — sfaturi: fotografiază mai de aproape, asigură-te că poza e clară, cu lumină bună, și că coloana Articol e vizibilă",
-      );
-      return;
-    }
-    closeScanner();
-    els.sheetStatus.hidden = true;
-    sharedList = found;
-    sharedName = "Dispoziție";
-    sharedKind = "scanată";
-    els.query.value = "";
-    render("");
-  } catch (error) {
-    console.error('Sheet scan error:', error);
-    if (error.name === 'InvalidStateError') {
-      sheetStatus(`Eroare: Imaginea nu poate fi decodată — încearcă cu o altă poza (JPG, PNG, WEBP) sau verifică dacă fișierul este corupt`);
-    } else {
-      sheetStatus(`Eroare: ${error.message || 'Poza nu a putut fi citită'} — încearcă cu o altă poza sau verifică formatul (JPG, PNG)`);
-    }
-  }
-}
-
-// keeps reading frames until a catalog code shows up, so nothing has to be timed
-async function scanLoop() {
-  if (scanning || !stream) return;
-  scanning = true;
-  els.scanStatus.textContent = "Inițiez camera...";
-  await new Promise((resolve) => setTimeout(resolve, 500));
-
-  for (let round = 0; scanning; round += 1) {
-    if (!els.scanVideo.videoWidth) {
-      await new Promise((resolve) => setTimeout(resolve, 200));
-      continue;
-    }
-    try {
-      const result = await readFrame(round);
-      if (!scanning) return;
-      if (result.code) {
-        useCode(result.code);
-        return;
-      }
-      els.scanStatus.textContent = result.seen
-        ? `Am citit ${result.seen}, dar nu e în catalog (încercare ${round + 1})`
-        : `Caut codul… (încercare ${round + 1}) ține telefonul nemișcat`;
-    } catch (error) {
-      console.error('Scan loop error:', error);
-      els.scanStatus.textContent = `Eroare: ${error.message || 'Scanarea nu a putut porni'} — verifică permisiunile pentru camera`;
-      return;
-    }
-  }
-}
 
 els.query.addEventListener("input", () => {
   const term = els.query.value;
@@ -1405,18 +1132,6 @@ els.theme.addEventListener("click", () =>
   ),
 );
 els.lang.addEventListener("click", cycleLanguage);
-els.scan.addEventListener("click", openScanner);
-els.scanShot.addEventListener("click", scanLoop);
-els.scanTorch.addEventListener("click", toggleTorch);
-els.scanSheet.addEventListener("click", () => els.sheetFile.click());
-els.sheetScan.addEventListener("click", () => els.sheetFile.click());
-els.sheetFile.addEventListener("change", () => {
-  const file = els.sheetFile.files?.[0];
-  els.sheetFile.value = "";
-  if (file) readSheet(file);
-});
-els.scanClose.addEventListener("click", closeScanner);
-els.scanner.addEventListener("close", closeScanner);
 els.note.addEventListener("input", () => {
   if (!current) return;
   const text = els.note.value.trim();
