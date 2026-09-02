@@ -59,17 +59,6 @@ const els = {
   theme: document.getElementById("theme"),
   share: document.getElementById("share"),
   sharePage: document.getElementById("sharePage"),
-  scan: document.getElementById("scan"),
-  scanner: document.getElementById("scanner"),
-  scanVideo: document.getElementById("scanVideo"),
-  scanShot: document.getElementById("scanShot"),
-  scanClose: document.getElementById("scanClose"),
-  scanTorch: document.getElementById("scanTorch"),
-  scanSheet: document.getElementById("scanSheet"),
-  sheetScan: document.getElementById("sheetScan"),
-  sheetFile: document.getElementById("sheetFile"),
-  sheetStatus: document.getElementById("sheetStatus"),
-  scanStatus: document.getElementById("scanStatus"),
   viewer: document.getElementById("viewer"),
   viewerTitle: document.getElementById("viewerTitle"),
   stage: document.getElementById("stage"),
@@ -138,7 +127,6 @@ const translations = {
     statusIndexed: "poziții indexate · caută cod sau denumire",
     statusResults: "rezultate",
     statusEmpty: "Niciun rezultat",
-    scanSheet: "📄 Scanează dispoziția",
     recent: "Ultimul articol deschis",
     favourites: "Favorite",
     history: "Căutări recente",
@@ -164,11 +152,6 @@ const translations = {
     theme: "☀",
     lang: "🌐",
     help: "?",
-    sheetScan: "📄 Scanează dispoziția",
-    scanClose: "Înapoi",
-    scanStatus: "Apropie codul de chenar",
-    scanTorch: "💡 Lumină",
-    scanShot: "Citește acum",
     sheetStatusHidden: true,
     shared: "Listă primită",
     sharedSave: "salvează la mine",
@@ -194,7 +177,6 @@ const translations = {
     statusIndexed: "positions indexed · search code or name",
     statusResults: "results",
     statusEmpty: "No results",
-    scanSheet: "📄 Scan sheet",
     recent: "Last opened article",
     favourites: "Favorites",
     history: "Recent searches",
@@ -220,11 +202,6 @@ const translations = {
     theme: "☀",
     lang: "🌐",
     help: "?",
-    sheetScan: "📄 Scan sheet",
-    scanClose: "Back",
-    scanStatus: "Bring code closer to frame",
-    scanTorch: "💡 Light",
-    scanShot: "Read now",
     sheetStatusHidden: true,
     shared: "Received list",
     sharedSave: "save to mine",
@@ -250,7 +227,6 @@ const translations = {
     statusIndexed: "Positionen indexiert · Code oder Name suchen",
     statusResults: "Ergebnisse",
     statusEmpty: "Keine Ergebnisse",
-    scanSheet: "📄 Scan Blatt",
     recent: "Zuletzt geöffneter Artikel",
     favourites: "Favoriten",
     history: "Letzte Suchen",
@@ -276,11 +252,6 @@ const translations = {
     theme: "☀",
     lang: "🌐",
     help: "?",
-    sheetScan: "📄 Scan Blatt",
-    scanClose: "Zurück",
-    scanStatus: "Code näher an Rahmen bringen",
-    scanTorch: "💡 Licht",
-    scanShot: "Jetzt lesen",
     sheetStatusHidden: true,
     shared: "Empfangene Liste",
     sharedSave: "zu mir speichern",
@@ -323,11 +294,6 @@ function updateLanguage() {
   // Update status messages (simplified for now)
   if (els.status.textContent.includes("Se încarcă") || els.status.textContent.includes("Loading") || els.status.textContent.includes("Katalog")) {
     els.status.textContent = t.statusLoading;
-  }
-
-  // Update scan sheet button
-  if (els.sheetScan) {
-    els.sheetScan.textContent = t.scanSheet;
   }
 
   // This will need to be expanded for all UI elements

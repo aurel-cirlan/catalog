@@ -14,8 +14,8 @@
     />
     <meta name="theme-color" content="#0f1216" />
     <meta name="author" content="Aurel Cîrlan" />
-    <meta name="description" content="Căutare rapidă în catalogul GEALAN - găsește articole, sisteme și componente pentru tâmplărie PVC. Scanează coduri cu camera telefonului și vezi desene din catalog." />
-    <meta name="keywords" content="GEALAN, catalog, tâmplărie PVC, ferestre, uși, profile, componente, scanning OCR, coduri articole" />
+    <meta name="description" content="Căutare rapidă în catalogul GEALAN - găsește articole, sisteme și componente pentru tâmplărie PVC. Vezi desene și detalii tehnice din catalog." />
+    <meta name="keywords" content="GEALAN, catalog, tâmplărie PVC, ferestre, uși, profile, componente, coduri articole" />
     <meta name="robots" content="index, follow" />
     <link rel="canonical" href="https://app.catalog.aurelcirlan.ro/" />
 
@@ -23,7 +23,7 @@
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://app.catalog.aurelcirlan.ro/" />
     <meta property="og:title" content="Catalog GEALAN - Căutare rapidă articole" />
-    <meta property="og:description" content="Căutare rapidă în catalogul GEALAN - găsește articole, sisteme și componente pentru tâmplărie PVC. Scanează coduri cu camera telefonului." />
+    <meta property="og:description" content="Căutare rapidă în catalogul GEALAN - găsește articole, sisteme și componente pentru tâmplărie PVC. Vezi desene și detalii tehnice." />
     <meta property="og:image" content="https://app.catalog.aurelcirlan.ro/icons/icon-512.png" />
     <meta property="og:locale" content="ro_RO" />
     <meta property="og:site_name" content="Catalog GEALAN" />
@@ -68,7 +68,7 @@
         "price": "0",
         "priceCurrency": "RON"
       },
-      "featureList": "Căutare rapidă, Scanning OCR cu camera, Lista de lucru, Comparare articole, Export PDF"
+      "featureList": "Căutare rapidă, Lista de lucru, Comparare articole, Export PDF"
     }
     </script>
   </head>
@@ -85,9 +85,6 @@
           aria-label="Caută cod articol"
         />
         <button id="clear" type="button" aria-label="Șterge">×</button>
-        <button id="scan" type="button" aria-label="Scanează cu camera">
-          📷
-        </button>
         <button id="theme" type="button" aria-label="Schimbă tema">☀</button>
         <button id="lang" type="button" aria-label="Schimbă limba">🌐</button>
         <button id="help" type="button" aria-label="Cum se folosește">?</button>
@@ -99,9 +96,7 @@
     <main>
       <section class="chips">
         <div class="chipRow">
-          <button id="sheetScan" type="button">📄 Scanează dispoziția</button>
         </div>
-        <input id="sheetFile" type="file" accept="image/*" hidden />
         <p id="sheetStatus" class="status" hidden></p>
       </section>
       <section id="shared" class="chips" hidden>
@@ -223,10 +218,8 @@
           Scrie codul (ex. 7093), denumirea în română sau germană, ori sistemul
           (S 8000).
         </li>
-        <li>📷 scanează codul cu camera telefonului.</li>
         <li>
-          📄 din camera, butonul „Dispoziție” fotografiază foaia de comandă și
-          îți scoate lista cu toate articolele găsite.
+          Folosește lista de lucru pentru a salva articolele selectate.
         </li>
         <li>Apeși pe rezultat și vezi desenul și pagina din catalog.</li>
         <li>Categoriile sunt grupate: sisteme, componente, glisante.</li>
@@ -298,24 +291,6 @@
     <div id="printArea" class="printArea" aria-hidden="true">
       <img id="printImage" alt="" />
     </div>
-
-    <dialog id="scanner" class="scanner">
-      <div class="viewerBar">
-        <button id="scanClose" type="button">Înapoi</button>
-        <span id="scanStatus">Apropie codul de chenar</span>
-      </div>
-      <div class="scanStage">
-        <video id="scanVideo" playsinline muted></video>
-        <div class="scanFrame"></div>
-      </div>
-      <div class="viewerBar">
-        <button id="scanTorch" type="button" hidden>💡 Lumină</button>
-        <button id="scanSheet" type="button">📄 Dispoziție</button>
-        <button id="scanShot" type="button" class="primary">
-          Citește acum
-        </button>
-      </div>
-    </dialog>
 
     <script src="app.js" type="module"></script>
   </body>
