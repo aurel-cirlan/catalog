@@ -100,6 +100,12 @@ const els = {
   lang: document.getElementById("lang"),
 };
 
+// Check for missing elements and log warnings
+const missingElements = Object.entries(els).filter(([key, el]) => el === null && key !== 'watermark' && key !== 'search');
+if (missingElements.length > 0) {
+  console.warn("Missing elements:", missingElements.map(([key]) => key).join(", "));
+}
+
 let hits = [];
 let sections = [];
 // articles that were dropped from the current edition, kept so old codes still work
@@ -280,16 +286,16 @@ function updateLanguage() {
   const t = translations[currentLang];
 
   // Update placeholder
-  els.query.placeholder = t.placeholder;
+  if (els.query) els.query.placeholder = t.placeholder;
 
   // Update theme button
-  els.theme.textContent = document.documentElement.dataset.theme === "light" ? "🌙" : "☀";
+  if (els.theme) els.theme.textContent = document.documentElement.dataset.theme === "light" ? "🌙" : "☀";
 
   // Update language button
-  els.lang.textContent = currentLang.toUpperCase();
+  if (els.lang) els.lang.textContent = currentLang.toUpperCase();
 
   // Update status messages (simplified for now)
-  if (els.status.textContent.includes("Se încarcă") || els.status.textContent.includes("Loading") || els.status.textContent.includes("Katalog")) {
+  if (els.status && (els.status.textContent.includes("Se încarcă") || els.status.textContent.includes("Loading") || els.status.textContent.includes("Katalog"))) {
     els.status.textContent = t.statusLoading;
   }
 
@@ -373,6 +379,7 @@ function getSuggestions(term) {
 }
 
 function renderSuggestions(term) {
+  if (!els.suggestions) return;
   const suggestions = getSuggestions(term);
   if (suggestions.length === 0) {
     els.suggestions.hidden = true;
@@ -396,7 +403,7 @@ function renderSuggestions(term) {
     item.append(span);
 
     item.addEventListener("click", () => {
-      els.query.value = suggestion.value;
+      if (els.query) els.query.value = suggestion.value;
       els.suggestions.hidden = true;
       remember(suggestion.value);
       addToSuggestionHistory(suggestion.value);
@@ -408,8 +415,8 @@ function renderSuggestions(term) {
 
 // Hide suggestions when clicking outside
 document.addEventListener("click", (e) => {
-  if (!els.query.parentElement.contains(e.target)) {
-    els.suggestions.hidden = true;
+  if (els.query && els.query.parentElement && !els.query.parentElement.contains(e.target)) {
+    if (els.suggestions) els.suggestions.hidden = true;
   }
 });
 
@@ -426,7 +433,7 @@ function useList(name) {
   saveWorklist();
   renderWorklist();
   updateListButton();
-  render(els.query.value);
+  render(els.query ? els.query.value : "");
 }
 
 function saveFavourites() {
@@ -446,7 +453,7 @@ function remember(term) {
 
 function applyTheme(theme) {
   document.documentElement.dataset.theme = theme;
-  els.theme.textContent = theme === "light" ? "\u263e" : "\u2600";
+  if (els.theme) els.theme.textContent = theme === "light" ? "\u263e" : "\u2600";
   localStorage.setItem(THEME_KEY, theme);
 }
 
@@ -637,6 +644,7 @@ function chip(text, on, onClick) {
 
 // the building depth of a profile system, the way the workshop asks for it
 function renderDepths() {
+  if (!els.depths || !els.depthList) return;
   const depths = [
     ...new Set(sections.map((section) => section.depth).filter(Boolean)),
   ];
@@ -648,7 +656,7 @@ function renderDepths() {
         activeDepth = depth === activeDepth ? null : depth;
         activeGroup = null;
         activeSection = null;
-        els.query.value = "";
+        if (els.query) els.query.value = "";
         render("");
       }),
     );
@@ -657,6 +665,7 @@ function renderDepths() {
 
 // two levels, so a phone screen shows a handful of buttons instead of thirty
 function renderSections() {
+  if (!els.sections || !els.groupList || !els.sectionList) return;
   els.sections.hidden = sections.length === 0;
   els.groupList.replaceChildren();
   const groups = [...new Set(sections.map((section) => section.group))];
@@ -666,7 +675,7 @@ function renderSections() {
         activeGroup = group === activeGroup ? null : group;
         activeDepth = null;
         activeSection = null;
-        els.query.value = "";
+        if (els.query) els.query.value = "";
         render("");
       }),
     );
@@ -680,7 +689,7 @@ function renderSections() {
     els.sectionList.append(
       chip(section.ro || section.name, section === activeSection, () => {
         activeSection = section === activeSection ? null : section;
-        els.query.value = "";
+        if (els.query) els.query.value = "";
         render("");
       }),
     );
@@ -689,24 +698,26 @@ function renderSections() {
 
 // a list someone sent on WhatsApp, opened straight from the link
 function renderShared() {
+  if (!els.shared || !els.sharedTitle || !els.status || !els.results) return;
   const found = sharedList.map(hitByCode).filter(Boolean);
   const kind = sharedKind || "primit\u0103";
   els.shared.hidden = false;
   els.sharedTitle.textContent = sharedName
     ? `${sharedName} · ${kind} (${found.length})`
     : `List\u0103 ${kind} (${found.length})`;
-  els.recent.hidden = true;
-  els.favourites.hidden = true;
-  els.history.hidden = true;
-  els.depths.hidden = true;
-  els.sections.hidden = true;
+  if (els.recent) els.recent.hidden = true;
+  if (els.favourites) els.favourites.hidden = true;
+  if (els.history) els.history.hidden = true;
+  if (els.depths) els.depths.hidden = true;
+  if (els.sections) els.sections.hidden = true;
   els.status.textContent = `Ai primit ${found.length} articole`;
   els.results.append(...found.map(resultCard));
 }
 
 function render(term) {
+  if (!els.results) return;
   els.results.replaceChildren();
-  els.shared.hidden = true;
+  if (els.shared) els.shared.hidden = true;
   if (!term.trim()) {
     renderDepths();
     renderSections();
@@ -717,14 +728,14 @@ function render(term) {
     }
     if (activeSection) {
       const matches = sectionHits(activeSection);
-      els.recent.hidden = true;
-      els.favourites.hidden = true;
-      els.history.hidden = true;
-      els.status.textContent = `${activeSection.ro || activeSection.name} · ${matches.length} articole`;
+      if (els.recent) els.recent.hidden = true;
+      if (els.favourites) els.favourites.hidden = true;
+      if (els.history) els.history.hidden = true;
+      if (els.status) els.status.textContent = `${activeSection.ro || activeSection.name} · ${matches.length} articole`;
       els.results.append(...matches.map(resultCard));
       return;
     }
-    els.status.textContent = `${hits.length} poziții indexate · caută cod sau denumire`;
+    if (els.status) els.status.textContent = `${hits.length} poziții indexate · caută cod sau denumire`;
     renderRecent();
     renderFavourites();
     renderHistory();
@@ -735,26 +746,27 @@ function render(term) {
   activeSection = null;
   renderDepths();
   renderSections();
-  els.worklist.hidden = true;
-  els.recent.hidden = true;
-  els.favourites.hidden = true;
-  els.history.hidden = true;
-  els.depths.hidden = true;
-els.sections.hidden = true;
+  if (els.worklist) els.worklist.hidden = true;
+  if (els.recent) els.recent.hidden = true;
+  if (els.favourites) els.favourites.hidden = true;
+  if (els.history) els.history.hidden = true;
+  if (els.depths) els.depths.hidden = true;
+  if (els.sections) els.sections.hidden = true;
   const matches = search(term);
   if (!matches.length) {
     const empty = document.createElement("li");
     empty.className = "empty";
     empty.textContent = "Niciun rezultat";
     els.results.append(empty);
-    els.status.textContent = "0 rezultate";
+    if (els.status) els.status.textContent = "0 rezultate";
     return;
   }
-  els.status.textContent = `${matches.length} rezultate`;
+  if (els.status) els.status.textContent = `${matches.length} rezultate`;
   els.results.append(...matches.map(resultCard));
 }
 
 function renderFavourites() {
+  if (!els.favourites || !els.favouriteList) return;
   const saved = [...favourites];
   els.favourites.hidden = saved.length === 0;
   els.favouriteList.replaceChildren();
@@ -771,6 +783,7 @@ function renderFavourites() {
 
 // one tap back into the drawing that was open last time
 function renderRecent() {
+  if (!els.recent || !els.recentList) return;
   const hit = lastOpened ? hitByCode(lastOpened) : null;
   els.recent.hidden = !hit;
   els.recentList.replaceChildren();
@@ -781,6 +794,7 @@ function renderRecent() {
 }
 
 function renderHistory() {
+  if (!els.history || !els.historyList) return;
   els.history.hidden = history.length === 0;
   els.historyList.replaceChildren();
   for (const term of history) {
@@ -788,7 +802,7 @@ function renderHistory() {
     chip.type = "button";
     chip.textContent = term;
     chip.addEventListener("click", () => {
-      els.query.value = term;
+      if (els.query) els.query.value = term;
       render(term);
     });
     els.historyList.append(chip);
@@ -825,6 +839,7 @@ const TUTORIALS = [
 ];
 
 function showTutorial(index) {
+  if (!els.tutImage || !els.tutText || !els.tutList) return;
   const tutorial = TUTORIALS[index];
   els.tutImage.src = `tut/${tutorial.file}`;
   els.tutImage.alt = tutorial.name;
@@ -846,6 +861,7 @@ function hitByCode(code) {
 
 // a short pick list the user builds while walking the shop, sent in one message
 function renderWorklist() {
+  if (!els.worklist || !els.worklistTitle || !els.worklistDrop || !els.listNames || !els.worklistItems) return;
   const names = Object.keys(lists);
   els.worklist.hidden = worklist.length === 0 && names.length < 2;
   els.worklistTitle.textContent = `${listName} (${worklist.length})`;
@@ -896,12 +912,14 @@ async function sendWorklist() {
 }
 
 function updateListButton() {
+  if (!els.addList) return;
   const inList = current && worklist.includes(current.code);
   els.addList.textContent = inList ? "\u2212 Listă" : "\uff0b Listă";
 }
 
 // two drawings next to each other, for choosing between similar profiles
 function renderCompare() {
+  if (!els.compareBody) return;
   els.compareBody.replaceChildren();
   for (const hit of comparing) {
     const pane = document.createElement("div");
@@ -937,17 +955,17 @@ function addToCompare() {
   ];
   comparing = comparing.slice(-2);
   if (comparing.length < 2) {
-    els.compareAdd.textContent = "⇄ Al doilea?";
+    if (els.compareAdd) els.compareAdd.textContent = "⇄ Al doilea?";
     return;
   }
-  els.compareAdd.textContent = "⇄ Compară";
+  if (els.compareAdd) els.compareAdd.textContent = "⇄ Compară";
   renderCompare();
-  els.compare.showModal();
+  if (els.compare) els.compare.showModal();
 }
 
 // prints only the catalog page, so it can also be saved as PDF from the print dialog
 function printCurrent() {
-  if (!current) return;
+  if (!current || !els.printImage || !els.pageImage) return;
   els.printImage.src = els.pageImage.src;
   const run = () => window.print();
   if (els.printImage.complete) run();
@@ -956,6 +974,7 @@ function printCurrent() {
 
 // the other articles printed on the same catalog page, usually parts that fit together
 function renderNeighbours(hit) {
+  if (!els.neighbours) return;
   const seen = new Set([hit.code]);
   const others = hits.filter(
     (item) =>
@@ -1011,11 +1030,13 @@ async function shareCurrent(withPage) {
 }
 
 function applyZoom() {
+  if (!els.pageImage) return;
   els.pageImage.style.width = `${naturalWidth * zoom}px`;
   placeMarker();
 }
 
 function placeMarker() {
+  if (!els.pageImage || !els.marker) return;
   const width = els.pageImage.clientWidth;
   const height = els.pageImage.clientHeight;
   if (!current || current.x === undefined) {
@@ -1032,7 +1053,7 @@ function placeMarker() {
 }
 
 function scrollToMarker() {
-  if (!current || current.x === undefined) return;
+  if (!current || current.x === undefined || !els.pageImage || !els.stage) return;
   const left =
     els.pageImage.clientWidth * (current.x + current.w / 2) -
     els.stage.clientWidth / 2;
@@ -1046,31 +1067,36 @@ function open(hit) {
   current = hit;
   lastOpened = hit.code;
   localStorage.setItem(LAST_KEY, lastOpened);
-  els.viewerTitle.textContent = `${hit.code} · pagina ${hit.page}${
+  if (els.viewerTitle) els.viewerTitle.textContent = `${hit.code} · pagina ${hit.page}${
     hit.old ? ` · ${OLD_LABEL}` : ""
   }`;
-  els.favourite.textContent = favourites.has(keyOf(hit)) ? "★" : "☆";
-  els.note.value = notes[hit.code] || "";
+  if (els.favourite) els.favourite.textContent = favourites.has(keyOf(hit)) ? "★" : "☆";
+  if (els.note) els.note.value = notes[hit.code] || "";
   updateListButton();
-  els.pageImage.src = pageUrl(hit);
-  els.pageImage.alt = `Pagina ${hit.page}`;
+  if (els.pageImage) {
+    els.pageImage.src = pageUrl(hit);
+    els.pageImage.alt = `Pagina ${hit.page}`;
+  }
   renderNeighbours(hit);
-  if (!els.viewer.open) els.viewer.showModal();
-  els.pageImage.onload = () => {
-    naturalWidth = els.pageImage.naturalWidth;
-    if (zoomMode === "article" && current.x !== undefined) {
-      zoom = 1;
-      applyZoom();
-      scrollToMarker();
-    } else {
-      fitPage();
-      scrollToMarker();
-    }
-  };
+  if (els.viewer && !els.viewer.open) els.viewer.showModal();
+  if (els.pageImage) {
+    els.pageImage.onload = () => {
+      naturalWidth = els.pageImage.naturalWidth;
+      if (zoomMode === "article" && current.x !== undefined) {
+        zoom = 1;
+        applyZoom();
+        scrollToMarker();
+      } else {
+        fitPage();
+        scrollToMarker();
+      }
+    };
+  }
 }
 
 // the whole sheet on the screen, so nothing has to be zoomed out by hand
 function fitPage() {
+  if (!els.pageImage || !els.stage) return;
   const ratio = els.pageImage.naturalHeight / naturalWidth || 1;
   zoom = Math.min(
     els.stage.clientWidth / naturalWidth,
@@ -1083,192 +1109,273 @@ function fitPage() {
 function setZoomMode(mode) {
   zoomMode = mode;
   localStorage.setItem(ZOOM_KEY, mode);
-  els.zoomMode.textContent =
+  if (els.zoomMode) els.zoomMode.textContent =
     mode === "page" ? "\ud83d\udd0e Articol" : "\u25a1 Pagina";
 }
 
 
 
-els.query.addEventListener("input", () => {
-  const term = els.query.value;
-  renderSuggestions(term);
-  render(term);
-});
-els.clear.addEventListener("click", () => {
-  els.query.value = "";
-  activeGroup = null;
-  activeSection = null;
-  els.suggestions.hidden = true;
-  els.query.focus();
-  render("");
-});
-els.close.addEventListener("click", () => els.viewer.close());
-els.zoomIn.addEventListener("click", () => {
-  zoom = Math.min(zoom * 1.4, 8);
-  applyZoom();
-  scrollToMarker();
-});
-els.zoomOut.addEventListener("click", () => {
-  zoom = Math.max(zoom / 1.4, 0.2);
-  applyZoom();
-  scrollToMarker();
-});
-els.fit.addEventListener("click", fitPage);
-els.zoomMode.addEventListener("click", () => {
-  setZoomMode(zoomMode === "page" ? "article" : "page");
-  if (zoomMode === "article") {
-    zoom = 1;
+if (els.query) {
+  els.query.addEventListener("input", () => {
+    const term = els.query.value;
+    renderSuggestions(term);
+    render(term);
+  });
+}
+if (els.clear) {
+  els.clear.addEventListener("click", () => {
+    if (els.query) els.query.value = "";
+    activeGroup = null;
+    activeSection = null;
+    if (els.suggestions) els.suggestions.hidden = true;
+    if (els.query) els.query.focus();
+    render("");
+  });
+}
+if (els.close) {
+  els.close.addEventListener("click", () => {
+    if (els.viewer) els.viewer.close();
+  });
+}
+if (els.zoomIn) {
+  els.zoomIn.addEventListener("click", () => {
+    zoom = Math.min(zoom * 1.4, 8);
     applyZoom();
     scrollToMarker();
-  } else {
-    fitPage();
-  }
-});
-els.share.addEventListener("click", () => shareCurrent(false));
-els.sharePage.addEventListener("click", () => shareCurrent(true));
-els.theme.addEventListener("click", () =>
-  applyTheme(
-    document.documentElement.dataset.theme === "light" ? "dark" : "light",
-  ),
-);
-els.lang.addEventListener("click", cycleLanguage);
-els.note.addEventListener("input", () => {
-  if (!current) return;
-  const text = els.note.value.trim();
-  if (text) notes[current.code] = text;
-  else delete notes[current.code];
-  saveNotes();
-});
-els.addList.addEventListener("click", () => {
-  if (!current) return;
-  worklist = worklist.includes(current.code)
-    ? worklist.filter((code) => code !== current.code)
-    : [...worklist, current.code];
-  saveWorklist();
-  updateListButton();
-  renderWorklist();
-});
-els.worklistSend.addEventListener("click", sendWorklist);
-els.sharedSave.addEventListener("click", () => {
-  const known = sharedList.filter(hitByCode);
-  // a received list keeps its name, so it does not mix with the current job
-  if (sharedName && sharedName !== listName) {
-    lists[sharedName] = [...new Set([...(lists[sharedName] || []), ...known])];
-    listName = sharedName;
-    worklist = lists[sharedName];
-  } else {
-    worklist = [...new Set([...worklist, ...known])];
-  }
-  saveWorklist();
-  closeShared();
-});
-els.worklistNew.addEventListener("click", () => {
-  const name = (
-    prompt("Numele listei noi (ex. șantier Ploiești):") || ""
-  ).trim();
-  if (!name) return;
-  if (!lists[name]) lists[name] = [];
-  useList(name);
-});
-els.worklistDrop.addEventListener("click", () => {
-  const names = Object.keys(lists);
-  if (names.length < 2) return;
-  if (!confirm(`Ștergi lista „${listName}”?`)) return;
-  delete lists[listName];
-  useList(Object.keys(lists)[0]);
-});
-els.feedback.addEventListener("click", () => {
-  els.guide.close();
-  els.feedbackBox.showModal();
-});
-els.feedbackClose.addEventListener("click", () => els.feedbackBox.close());
-els.sharedClose.addEventListener("click", closeShared);
-els.worklistClear.addEventListener("click", () => {
-  worklist = [];
-  saveWorklist();
-  renderWorklist();
-  updateListButton();
-});
-els.compareAdd.addEventListener("click", addToCompare);
-els.compareClose.addEventListener("click", () => els.compare.close());
-els.compareReset.addEventListener("click", () => {
-  comparing = [];
-  els.compareAdd.textContent = "⇄ Compară";
-  els.compare.close();
-});
-els.printPage.addEventListener("click", printCurrent);
-els.help.addEventListener("click", () => els.guide.showModal());
-els.backupSave.addEventListener("click", saveBackup);
-els.backupLoad.addEventListener("click", () => els.backupFile.click());
-els.backupFile.addEventListener("change", async () => {
-  const file = els.backupFile.files[0];
-  els.backupFile.value = "";
-  if (file) await loadBackup(file);
-});
-els.guideTut.addEventListener("click", () => {
-  localStorage.setItem(GUIDE_KEY, "1");
-  els.guide.close();
-  showTutorial(0);
-  els.tutorials.showModal();
-});
-els.tutClose.addEventListener("click", () => {
-  els.tutImage.removeAttribute("src");
-  els.tutorials.close();
-});
-els.guideClose.addEventListener("click", () => {
-  localStorage.setItem(GUIDE_KEY, "1");
-  els.guide.close();
-});
-els.recentClear.addEventListener("click", () => {
-  lastOpened = "";
-  localStorage.removeItem(LAST_KEY);
-  renderRecent();
-});
-els.favouriteClear.addEventListener("click", () => {
-  favourites.clear();
-  saveFavourites();
-  renderFavourites();
-  if (current) els.favourite.textContent = "\u2606";
-});
-els.historyClear.addEventListener("click", () => {
-  history = [];
-  localStorage.removeItem(HISTORY_KEY);
-  renderHistory();
-});
-els.favourite.addEventListener("click", () => {
-  if (!current) return;
-  const key = keyOf(current);
-  if (favourites.has(key)) favourites.delete(key);
-  else favourites.add(key);
-  saveFavourites();
-  els.favourite.textContent = favourites.has(key) ? "★" : "☆";
-  renderFavourites();
-});
+  });
+}
+if (els.zoomOut) {
+  els.zoomOut.addEventListener("click", () => {
+    zoom = Math.max(zoom / 1.4, 0.2);
+    applyZoom();
+    scrollToMarker();
+  });
+}
+if (els.fit) {
+  els.fit.addEventListener("click", fitPage);
+}
+if (els.zoomMode) {
+  els.zoomMode.addEventListener("click", () => {
+    setZoomMode(zoomMode === "page" ? "article" : "page");
+    if (zoomMode === "article") {
+      zoom = 1;
+      applyZoom();
+      scrollToMarker();
+    } else {
+      fitPage();
+    }
+  });
+}
+if (els.share) {
+  els.share.addEventListener("click", () => shareCurrent(false));
+}
+if (els.sharePage) {
+  els.sharePage.addEventListener("click", () => shareCurrent(true));
+}
+if (els.theme) {
+  els.theme.addEventListener("click", () =>
+    applyTheme(
+      document.documentElement.dataset.theme === "light" ? "dark" : "light",
+    ),
+  );
+}
+if (els.lang) {
+  els.lang.addEventListener("click", cycleLanguage);
+}
+if (els.note) {
+  els.note.addEventListener("input", () => {
+    if (!current) return;
+    const text = els.note.value.trim();
+    if (text) notes[current.code] = text;
+    else delete notes[current.code];
+    saveNotes();
+  });
+}
+if (els.addList) {
+  els.addList.addEventListener("click", () => {
+    if (!current) return;
+    worklist = worklist.includes(current.code)
+      ? worklist.filter((code) => code !== current.code)
+      : [...worklist, current.code];
+    saveWorklist();
+    updateListButton();
+    renderWorklist();
+  });
+}
+if (els.worklistSend) {
+  els.worklistSend.addEventListener("click", sendWorklist);
+}
+if (els.sharedSave) {
+  els.sharedSave.addEventListener("click", () => {
+    const known = sharedList.filter(hitByCode);
+    // a received list keeps its name, so it does not mix with the current job
+    if (sharedName && sharedName !== listName) {
+      lists[sharedName] = [...new Set([...(lists[sharedName] || []), ...known])];
+      listName = sharedName;
+      worklist = lists[sharedName];
+    } else {
+      worklist = [...new Set([...worklist, ...known])];
+    }
+    saveWorklist();
+    closeShared();
+  });
+}
+if (els.worklistNew) {
+  els.worklistNew.addEventListener("click", () => {
+    const name = (
+      prompt("Numele listei noi (ex. șantier Ploiești):") || ""
+    ).trim();
+    if (!name) return;
+    if (!lists[name]) lists[name] = [];
+    useList(name);
+  });
+}
+if (els.worklistDrop) {
+  els.worklistDrop.addEventListener("click", () => {
+    const names = Object.keys(lists);
+    if (names.length < 2) return;
+    if (!confirm(`Ștergi lista „${listName}”?`)) return;
+    delete lists[listName];
+    useList(Object.keys(lists)[0]);
+  });
+}
+if (els.feedback) {
+  els.feedback.addEventListener("click", () => {
+    if (els.guide) els.guide.close();
+    if (els.feedbackBox) els.feedbackBox.showModal();
+  });
+}
+if (els.feedbackClose) {
+  els.feedbackClose.addEventListener("click", () => {
+    if (els.feedbackBox) els.feedbackBox.close();
+  });
+}
+if (els.sharedClose) {
+  els.sharedClose.addEventListener("click", closeShared);
+}
+if (els.worklistClear) {
+  els.worklistClear.addEventListener("click", () => {
+    worklist = [];
+    saveWorklist();
+    renderWorklist();
+    updateListButton();
+  });
+}
+if (els.compareAdd) {
+  els.compareAdd.addEventListener("click", addToCompare);
+}
+if (els.compareClose) {
+  els.compareClose.addEventListener("click", () => {
+    if (els.compare) els.compare.close();
+  });
+}
+if (els.compareReset) {
+  els.compareReset.addEventListener("click", () => {
+    comparing = [];
+    if (els.compareAdd) els.compareAdd.textContent = "⇄ Compară";
+    if (els.compare) els.compare.close();
+  });
+}
+if (els.printPage) {
+  els.printPage.addEventListener("click", printCurrent);
+}
+if (els.help) {
+  els.help.addEventListener("click", () => {
+    if (els.guide) els.guide.showModal();
+  });
+}
+if (els.backupSave) {
+  els.backupSave.addEventListener("click", saveBackup);
+}
+if (els.backupLoad) {
+  els.backupLoad.addEventListener("click", () => els.backupFile.click());
+}
+if (els.backupFile) {
+  els.backupFile.addEventListener("change", async () => {
+    const file = els.backupFile.files[0];
+    els.backupFile.value = "";
+    if (file) await loadBackup(file);
+  });
+}
+if (els.guideTut) {
+  els.guideTut.addEventListener("click", () => {
+    localStorage.setItem(GUIDE_KEY, "1");
+    if (els.guide) els.guide.close();
+    showTutorial(0);
+    if (els.tutorials) els.tutorials.showModal();
+  });
+}
+if (els.tutClose) {
+  els.tutClose.addEventListener("click", () => {
+    if (els.tutImage) els.tutImage.removeAttribute("src");
+    if (els.tutorials) els.tutorials.close();
+  });
+}
+if (els.guideClose) {
+  els.guideClose.addEventListener("click", () => {
+    localStorage.setItem(GUIDE_KEY, "1");
+    if (els.guide) els.guide.close();
+  });
+}
+if (els.recentClear) {
+  els.recentClear.addEventListener("click", () => {
+    lastOpened = "";
+    localStorage.removeItem(LAST_KEY);
+    renderRecent();
+  });
+}
+if (els.favouriteClear) {
+  els.favouriteClear.addEventListener("click", () => {
+    favourites.clear();
+    saveFavourites();
+    renderFavourites();
+    if (current && els.favourite) els.favourite.textContent = "\u2606";
+  });
+}
+if (els.historyClear) {
+  els.historyClear.addEventListener("click", () => {
+    history = [];
+    localStorage.removeItem(HISTORY_KEY);
+    renderHistory();
+  });
+}
+if (els.favourite) {
+  els.favourite.addEventListener("click", () => {
+    if (!current) return;
+    const key = keyOf(current);
+    if (favourites.has(key)) favourites.delete(key);
+    else favourites.add(key);
+    saveFavourites();
+    els.favourite.textContent = favourites.has(key) ? "★" : "☆";
+    renderFavourites();
+  });
+}
 // Navigare cu tastatură
 let selectedIndex = -1;
 
 document.addEventListener("keydown", (e) => {
-  if (els.viewer.open) {
+  if (els.viewer && els.viewer.open) {
     if (e.key === "Escape") {
       els.viewer.close();
     }
     return;
   }
 
-  if (els.compare.open) {
+  if (els.compare && els.compare.open) {
     if (e.key === "Escape") {
       els.compare.close();
     }
     return;
   }
 
-  if (els.guide.open) {
+  if (els.guide && els.guide.open) {
     if (e.key === "Escape") {
       els.guide.close();
     }
     return;
   }
 
+  if (!els.results) return;
   const results = els.results.querySelectorAll("li");
   if (!results.length) return;
 
@@ -1299,9 +1406,11 @@ function updateSelection(results) {
   });
 }
 
-els.query.addEventListener("input", () => {
-  selectedIndex = -1;
-});
+if (els.query) {
+  els.query.addEventListener("input", () => {
+    selectedIndex = -1;
+  });
+}
 
 // a small file the user can send to the new phone, so notes and list survive
 function saveBackup() {
@@ -1354,12 +1463,12 @@ async function loadBackup(file) {
       );
       localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
     }
-    els.guide.close();
-    els.query.value = "";
+    if (els.guide) els.guide.close();
+    if (els.query) els.query.value = "";
     render("");
-    els.status.textContent = "Datele au fost încărcate";
+    if (els.status) els.status.textContent = "Datele au fost încărcate";
   } catch {
-    els.status.textContent = "Fișierul nu a putut fi citit";
+    if (els.status) els.status.textContent = "Fișierul nu a putut fi citit";
   }
 }
 
@@ -1413,18 +1522,18 @@ async function boot() {
       new URLSearchParams(location.search).get("nume") || ""
     ).trim();
     const shared = sharedList.length ? "" : hash;
-    els.query.value = shared;
+    if (els.query) els.query.value = shared;
     render(shared);
     if (sharedList.length) return;
-    if (!localStorage.getItem(GUIDE_KEY)) els.guide.showModal();
-    else if (!shared) els.query.focus();
+    if (!localStorage.getItem(GUIDE_KEY) && els.guide) els.guide.showModal();
+    else if (!shared && els.query) els.query.focus();
   } catch (error) {
     console.error("Eroare la încărcare catalog:", error);
-    els.status.textContent = `Catalogul nu a putut fi încărcat: ${error.message}`;
+    if (els.status) els.status.textContent = `Catalogul nu a putut fi încărcat: ${error.message}`;
   }
 }
 
-els.watermark.textContent = new Array(400).fill("aurelcirlan.ro").join(" ");
+if (els.watermark) els.watermark.textContent = new Array(400).fill("aurelcirlan.ro").join(" ");
 
 applyTheme(localStorage.getItem(THEME_KEY) || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
 setZoomMode(zoomMode);
