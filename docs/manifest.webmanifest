@@ -2,8 +2,8 @@
   "name": "Catalog GEALAN - Căutare rapidă articole",
   "short_name": "Catalog GEALAN",
   "description": "Căutare rapidă în catalogul GEALAN - găsește articole, sisteme și componente pentru tâmplărie PVC",
-  "start_url": "https://catalog.aurelcirlan.ro/",
-  "scope": "https://catalog.aurelcirlan.ro/",
+  "start_url": "https://app.catalog.aurelcirlan.ro/",
+  "scope": "https://app.catalog.aurelcirlan.ro/",
   "display": "standalone",
   "background_color": "#111418",
   "theme_color": "#0f1216",
@@ -11,13 +11,13 @@
   "categories": ["business", "utilities", "productivity"],
   "screenshots": [
     {
-      "src": "https://catalog.aurelcirlan.ro/cover.webp",
+      "src": "https://app.catalog.aurelcirlan.ro/cover.webp",
       "sizes": "540x720",
       "type": "image/webp",
       "form_factor": "narrow"
     },
     {
-      "src": "https://catalog.aurelcirlan.ro/cover.webp",
+      "src": "https://app.catalog.aurelcirlan.ro/cover.webp",
       "sizes": "540x720",
       "type": "image/webp",
       "form_factor": "wide"
