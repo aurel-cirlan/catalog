@@ -109,9 +109,6 @@ const els = {
   suggestions: document.getElementById("suggestions"),
   search: document.querySelector(".search"),
   lang: document.getElementById("lang"),
-  userDisplay: document.getElementById("userDisplay"),
-  logout: document.getElementById("logout"),
-  adminPanel: document.getElementById("adminPanel"),
 };
 
 let hits = [];
@@ -1505,11 +1502,6 @@ els.feedback.addEventListener("click", () => {
 });
 els.feedbackClose.addEventListener("click", () => els.feedbackBox.close());
 els.sharedClose.addEventListener("click", closeShared);
-els.logout.addEventListener("click", () => {
-  if (typeof logout === 'function') {
-    logout();
-  }
-});
 els.worklistClear.addEventListener("click", () => {
   worklist = [];
   saveWorklist();
@@ -1740,29 +1732,6 @@ async function boot() {
     if (sharedList.length) return;
     if (!localStorage.getItem(GUIDE_KEY)) els.guide.showModal();
     else if (!shared) els.query.focus();
-
-    // Update user display if logged in
-    console.log('=== USER DISPLAY UPDATE ===');
-    if (typeof getCurrentUser === 'function' && getCurrentUser()) {
-      const user = getCurrentUser();
-      console.log('Current user:', user);
-      if (els.userDisplay) {
-        els.userDisplay.textContent = user.email;
-        els.userDisplay.hidden = false;
-        console.log('User display shown:', user.email);
-      }
-      // Show admin panel button for admin users
-      if (user.isAdmin && els.adminPanel) {
-        els.adminPanel.hidden = false;
-        console.log('Admin panel button shown');
-        els.adminPanel.addEventListener('click', () => {
-          window.location.href = 'admin.html';
-        });
-      }
-    } else {
-      console.log('No current user found');
-    }
-    console.log('=== END USER DISPLAY UPDATE ===');
   } catch (error) {
     els.status.textContent = `Catalogul nu a putut fi încărcat: ${error.message}`;
   }

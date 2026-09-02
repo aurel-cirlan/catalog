@@ -2,8 +2,8 @@
   "name": "Catalog GEALAN - Căutare rapidă articole",
   "short_name": "Catalog GEALAN",
   "description": "Căutare rapidă în catalogul GEALAN - găsește articole, sisteme și componente pentru tâmplărie PVC",
-  "start_url": "https://app.catalog.aurelcirlan.ro/",
-  "scope": "https://app.catalog.aurelcirlan.ro/",
+  "start_url": "https://catalog.aurelcirlan.ro/",
+  "scope": "https://catalog.aurelcirlan.ro/",
   "display": "standalone",
   "background_color": "#111418",
   "theme_color": "#0f1216",
@@ -11,13 +11,13 @@
   "categories": ["business", "utilities", "productivity"],
   "screenshots": [
     {
-      "src": "https://app.catalog.aurelcirlan.ro/cover.webp",
+      "src": "https://catalog.aurelcirlan.ro/cover.webp",
       "sizes": "540x720",
       "type": "image/webp",
       "form_factor": "narrow"
     },
     {
-      "src": "https://app.catalog.aurelcirlan.ro/cover.webp",
+      "src": "https://catalog.aurelcirlan.ro/cover.webp",
       "sizes": "540x720",
       "type": "image/webp",
       "form_factor": "wide"
@@ -25,49 +25,49 @@
   ],
   "icons": [
     {
-      "src": "https://app.catalog.aurelcirlan.ro/icons/icon-72.png",
+      "src": "icons/icon-72.png",
       "sizes": "72x72",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "https://app.catalog.aurelcirlan.ro/icons/icon-96.png",
+      "src": "icons/icon-96.png",
       "sizes": "96x96",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "https://app.catalog.aurelcirlan.ro/icons/icon-128.png",
+      "src": "icons/icon-128.png",
       "sizes": "128x128",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "https://app.catalog.aurelcirlan.ro/icons/icon-144.png",
+      "src": "icons/icon-144.png",
       "sizes": "144x144",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "https://app.catalog.aurelcirlan.ro/icons/icon-152.png",
+      "src": "icons/icon-152.png",
       "sizes": "152x152",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "https://app.catalog.aurelcirlan.ro/icons/icon-192.png",
+      "src": "icons/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "https://app.catalog.aurelcirlan.ro/icons/icon-384.png",
+      "src": "icons/icon-384.png",
       "sizes": "384x384",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "https://app.catalog.aurelcirlan.ro/icons/icon-512.png",
+      "src": "icons/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
