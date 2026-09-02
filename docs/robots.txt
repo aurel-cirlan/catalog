@@ -1,8 +1,8 @@
-# robots.txt pentru app.catalog.aurelcirlan.ro
+# robots.txt pentru catalog.aurelcirlan.ro
 # Permiteți toate crawlers să acceseze site-ul
 
 User-agent: *
 Allow: /
 
 # Sitemap
-Sitemap: https://app.catalog.aurelcirlan.ro/sitemap.xml
+Sitemap: https://catalog.aurelcirlan.ro/sitemap.xml

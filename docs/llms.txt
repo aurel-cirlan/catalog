@@ -20,10 +20,10 @@ Aurel Cîrlan
 - WhatsApp: [0732 292 535](https://wa.me/40732292535)
 
 ## Links importante
-- [Aplicație principală](https://app.catalog.aurelcirlan.ro/)
+- [Aplicație principală](https://catalog.aurelcirlan.ro/)
 - [Website developer](https://aurelcirlan.ro)
-- [Sitemap](https://app.catalog.aurelcirlan.ro/sitemap.xml)
-- [Robots.txt](https://app.catalog.aurelcirlan.ro/robots.txt)
+- [Sitemap](https://catalog.aurelcirlan.ro/sitemap.xml)
+- [Robots.txt](https://catalog.aurelcirlan.ro/robots.txt)
 
 ## Tehnologii
 - Vanilla JavaScript
