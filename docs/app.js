@@ -1395,12 +1395,17 @@ async function oldHits() {
 
 async function boot() {
   try {
+    console.log("Încearc să încarc catalogul...");
     const response = await fetch("data/index.json");
+    console.log("Response status:", response.status);
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const index = await response.json();
+    console.log("Index încărcat, încep flatten...");
     hits = flatten(index);
+    console.log("Hits flatten:", hits.length);
     sections = index.sections || [];
     hits = hits.concat(await oldHits());
+    console.log("Total hits după oldHits:", hits.length);
 
     const hash = decodeURIComponent(location.hash.replace("#", "")).trim();
     sharedList = listFromLink(hash);
@@ -1414,6 +1419,7 @@ async function boot() {
     if (!localStorage.getItem(GUIDE_KEY)) els.guide.showModal();
     else if (!shared) els.query.focus();
   } catch (error) {
+    console.error("Eroare la încărcare catalog:", error);
     els.status.textContent = `Catalogul nu a putut fi încărcat: ${error.message}`;
   }
 }
