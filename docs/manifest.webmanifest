@@ -1,6 +1,6 @@
 {
-  "name": "Catalog GEALAN - Căutare rapidă articole",
-  "short_name": "Catalog GEALAN",
+  "name": "CATALOG",
+  "short_name": "CATALOG",
   "description": "Căutare rapidă în catalogul GEALAN - găsește articole, sisteme și componente pentru tâmplărie PVC",
   "start_url": "https://app.catalog.aurelcirlan.ro/",
   "scope": "https://app.catalog.aurelcirlan.ro/",
